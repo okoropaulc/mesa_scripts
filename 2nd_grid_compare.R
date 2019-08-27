@@ -355,3 +355,53 @@ ggscatter(oknn_knn, x = "oknn_cv_R2", y = "knn_cv_R2",
           xlab = "Optimized KNN R2", ylab = "Non Optimized KNN", 
           title = "optimized KNN vs non optimized KNN",
           xlim = c(-1, 1), ylim = c(-1, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+
+mets1 <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_AFA_2_METS_rf_cor_test_chr22.txt", header = T, sep = "\t")
+omets1 <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/AFA_2_METS_rf_cor_test_chr22.txt", header = T, sep = "\t")
+
+
+gv18 <- read.table(file = "Z:/data/mesa_models/gencode.v18.annotation.parsed.txt", header = T)
+gv28 <- read.table(file = "Z:/data/METS_model/hg19/gencode.v28_annotation.parsed.txt", header = T)
+
+
+rf_grid <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/best_grid_rf_chr20_full.txt", header=T, sep="\t")
+
+afa_g_no <- read.table(file = "Z:/data/mesa_models/meqtl_sorted_AFA_MESA_Epi_GEX_data_sidno_Nk-10.txt", header = T)
+mets_g_no <- read.table(file = "Z:/data/METS_model/hg19/METS_peer10_all_chr_prot_coding_gex.txt", header = T)
+
+library(tidyverse)
+
+afa_g_no$PROBE_ID <- as.character(afa_g_no$PROBE_ID)
+mets_g_no$PROBE_ID <- as.character(mets_g_no$PROBE_ID)
+
+no = 1
+chrom <- subset(gv18, gv18$chr == no)
+chrom <- subset(chrom, chrom$gene_type == "protein_coding")
+chrom$gene_id <- as.character(chrom$gene_id)
+g_ex <- inner_join(chrom, afa_g_no, by = c("gene_id" = "PROBE_ID"))
+
+mchrom <- subset(gv28, gv28$chr == no)
+mchrom <- subset(mchrom, mchrom$gene_type == "protein_coding")
+mchrom$gene_id <- as.character(mchrom$gene_id)
+mg_ex <- inner_join(mchrom, mets_g_no, by = c("gene_id" = "PROBE_ID"))
+
+afa <- g_ex
+met <- mg_ex
+
+#am <- inner_join(afa[,2], met[,2], by = c("gene_id" = "gene_id"))
+
+for (i in 1:length(afa$gene_id)){
+  afa$gene_id[i] <- gsub('\\.[0-9]+','',afa$gene_id[i])
+} #just to remove the decimal places in the gene_id
+
+
+for (i in 1:length(met$gene_id)){
+  met$gene_id[i] <- gsub('\\.[0-9]+','',met$gene_id[i])
+} #just to remove the decimal places in the gene_id
+
+uni <- afa$gene_id %in% met$gene_id
+uni <- uni[uni != FALSE]
+
+a2m9 <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_AFA_2_METS_rf_cor_test_chr20.txt", header = T, sep = "\t")
+oa2m9 <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/AFA_2_METS_rf_cor_test_chr20.txt", header = T, sep = "\t")
