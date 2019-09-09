@@ -405,3 +405,133 @@ uni <- uni[uni != FALSE]
 
 a2m9 <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_AFA_2_METS_rf_cor_test_chr20.txt", header = T, sep = "\t")
 oa2m9 <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/AFA_2_METS_rf_cor_test_chr20.txt", header = T, sep = "\t")
+
+
+# Model performance on test data set
+
+"%&%" <- function(a,b) paste(a,b, sep = "")
+
+knn <- NULL
+rf <- NULL
+svr <- NULL
+#el <- NULL
+pop <- "AFA"
+
+for (chrom in 1:22) {
+  no <- as.character(chrom)
+  knn <- rbind(knn, read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_knn_cor_test_chr" %&% chrom %&% ".txt", header = T, stringsAsFactors = F, sep = "\t"))
+  rf <- rbind(rf, read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_rf_cor_test_chr" %&% chrom %&% ".txt", header = T, stringsAsFactors = F, sep = "\t"))
+  svr <- rbind(svr, read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_svr_cor_test_chr" %&% chrom %&% ".txt", header = T, stringsAsFactors = F, sep = "\t"))
+}
+
+#write out the merged full chromosomes
+write.table(knn, file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_knn_cor_test_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+write.table(rf, file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_rf_cor_test_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+write.table(svr, file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_svr_cor_test_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+
+
+#Compare model Optimized performance on AFA 2 METS as against Elastic Net
+#AFA 2METS
+
+afa_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_AFA_2_METS.txt", header = T)
+afa_2_mets$gene <- as.character(afa_2_mets$gene)
+
+knn <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_AFA_2_METS_knn_cor_test_full_chr.txt", header = T)
+knn <- knn[,c(1,9)]
+knn$gene_id <- as.character(knn$gene_id)
+
+rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_AFA_2_METS_rf_cor_test_full_chr.txt", header = T)
+rf <- rf[,c(1,9)]
+rf$gene_id <- as.character(rf$gene_id)
+
+svr <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_AFA_2_METS_svr_cor_test_full_chr.txt", header = T)
+svr <- svr[,c(1,9)]
+svr$gene_id <- as.character(svr$gene_id)
+
+#Take the overlapping genes between elastic net and each model
+#RF
+library(dplyr)
+library(ggplot2)
+library("ggpubr")
+elrf <- inner_join(afa_2_mets, rf, by = c("gene" = "gene_id"))
+elrf <- elrf[,c(2,3)]
+names(elrf) <- c("elnet", "rf")
+ggplot(elrf, aes(x=elnet, y=rf)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)") + 
+  ylab("RF Optimized") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+ggscatter(elrf, x = "elnet", y = "rf", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "RF Optimized", title = "Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)",
+          xlim = c(-1, 1), ylim = c(-1, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+#Compare with non optimized and optimized rf
+orf <- read.table(file="Z:/data/mesa_models/python_ml_models/results/AFA_2_METS_rf_cor_test_all_chr.txt", header = T, sep = "\t")
+orf <- orf[,c(1,9)]
+orf$gene_id <- as.character(orf$gene_id)
+
+rforf <- inner_join(rf, orf, by = c("gene_id" = "gene_id"))
+names(rforf) <- c("gene", "rf", "orf")
+
+ggplot(rforf, aes(x=rf, y=orf)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)") + 
+  ylab("Non Optimized RF") + xlab("Optimized RF") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+ggscatter(rforf, x = "rf", y = "orf", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Optimized RF", ylab = "Non Optimized RF", title = "Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)",
+          xlim = c(-1, 1), ylim = c(-1, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+#SVR
+library(dplyr)
+library(ggplot2)
+library("ggpubr")
+elsvr <- inner_join(afa_2_mets, svr, by = c("gene" = "gene_id"))
+elsvr <- elsvr[,c(2,3)]
+names(elsvr) <- c("elnet", "svr")
+ggplot(elsvr, aes(x=elnet, y=svr)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)") + 
+  ylab("SVR Optimized") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+ggscatter(elsvr, x = "elnet", y = "svr", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "SVR Optimized", title = "Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)",
+          xlim = c(-1, 1), ylim = c(-1, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+#Compare with non optimized and optimized svr
+osvr <- read.table(file="Z:/data/mesa_models/python_ml_models/results/AFA_2_METS_svr_rbf_cor_test_all_chr.txt", header = T, sep = "\t")
+osvr <- osvr[,c(1,9)]
+osvr$gene_id <- as.character(osvr$gene_id)
+
+#KNN
+library(dplyr)
+library(ggplot2)
+library("ggpubr")
+elknn <- inner_join(afa_2_mets, knn, by = c("gene" = "gene_id"))
+elknn <- elknn[,c(2,3)]
+names(elknn) <- c("elnet", "knn")
+ggplot(elknn, aes(x=elnet, y=knn)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)") + 
+  ylab("KNN Optimized") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+ggscatter(elknn, x = "elnet", y = "knn", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "KNN Optimized", title = "Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)",
+          xlim = c(-1, 1), ylim = c(-1, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+#Compare with non optimized and optimized KNN
+oknn <- read.table(file="Z:/data/mesa_models/python_ml_models/results/AFA_2_METS_knn_cor_test_all_chr.txt", header = T, sep = "\t")
+oknn <- oknn[,c(1,9)]
+oknn$gene_id <- as.character(oknn$gene_id)
+
+knnoknn <- inner_join(knn, oknn, by = c("gene_id" = "gene_id"))
+names(knnoknn) <- c("gene", "knn", "oknn")
+
+ggplot(knnoknn, aes(x=knn, y=oknn)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)") + 
+  ylab("Non Optimized KNN") + xlab("Optimized KNN") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+ggscatter(knnoknn, x = "knn", y = "oknn", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Optimized KNN", ylab = "Non Optimized KNN", title = "Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)",
+          xlim = c(-1, 1), ylim = c(-1, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
