@@ -231,3 +231,57 @@ c2m_svr <- inner_join(gnc, c2m_svr, by = c("gene_id" = "gene_id"))
 
 h2m_svr <- his_svr
 h2m_svr <- inner_join(gnc, h2m_svr, by = c("gene_id" = "gene_id"))
+
+
+#For approximately what percent of genes with rho>0.1, is RF rho higher than EN?
+#FOR AFA
+afa2mets <- inner_join(afa_2_mets, afa_rf, by = c("gene" = "gene_id"))
+names(afa2mets) <- c("genes", "EN", "RF")
+#afa2mets <- subset(afa2mets, EN > 0.1)# & RF > 0.1)
+
+en <- 0 #Count how many elastic net genes have rho > 0.1 & > rf genes
+rf <- 0 #Count how many random forest genes have rho > 0.1 & > EN genes
+
+for (i in 1:length(afa2mets$genes)){
+  if (afa2mets$EN[i] > 0.1 & afa2mets$EN[i] > afa2mets$RF[i]){
+    en <- en + 1
+  }
+  if (afa2mets$RF[i] > 0.1 & afa2mets$RF[i] > afa2mets$EN[i]){
+    rf <- rf + 1
+  }
+}
+
+#FOR HIS
+his2mets <- inner_join(his_2_mets, his_rf, by = c("gene" = "gene_id"))
+names(his2mets) <- c("genes", "EN", "RF")
+#afa2mets <- subset(afa2mets, EN > 0.1)# & RF > 0.1)
+
+en <- 0 #Count how many elastic net genes have rho > 0.1 & > rf genes
+rf <- 0 #Count how many random forest genes have rho > 0.1 & > EN genes
+
+for (i in 1:length(his2mets$genes)){
+  if (his2mets$EN[i] > 0.1 & his2mets$EN[i] > his2mets$RF[i]){
+    en <- en + 1
+  }
+  if (his2mets$RF[i] > 0.1 & his2mets$RF[i] > his2mets$EN[i]){
+    rf <- rf + 1
+  }
+}
+
+
+#FOR CAU
+cau2mets <- inner_join(cau_2_mets, cau_rf, by = c("gene" = "gene_id"))
+names(cau2mets) <- c("genes", "EN", "RF")
+#afa2mets <- subset(afa2mets, EN > 0.1)# & RF > 0.1)
+
+en <- 0 #Count how many elastic net genes have rho > 0.1 & > rf genes
+rf <- 0 #Count how many random forest genes have rho > 0.1 & > EN genes
+
+for (i in 1:length(cau2mets$genes)){
+  if (cau2mets$EN[i] > 0.1 & cau2mets$EN[i] > cau2mets$RF[i]){
+    en <- en + 1
+  }
+  if (cau2mets$RF[i] > 0.1 & cau2mets$RF[i] > cau2mets$EN[i]){
+    rf <- rf + 1
+  }
+}
