@@ -788,3 +788,44 @@ write.table(prf, file = "Z:/data/mesa_models/python_ml_models/merged_chunk_resul
 brf <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/best_grid_rf_all_chrom.txt", header=T)
 prf <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/AFA_rf_100_to_500tree_cv_full_chr.txt", header=T)
 
+#Start by taking genes with best CV R2 > 0.3
+#Then use the genes to subset the dataframe of random forest trees
+brf <- subset(brf, CV_R2 > 0.5)
+brf <- brf[,c(1,2)]
+brf$Gene_ID <- as.character(brf$Gene_ID)
+
+prf <- prf[,c(1,4:13)]
+prf$gene_id <- as.character(prf$gene_id)
+
+library(tidyverse)
+
+rftrees <- inner_join(brf, prf, by = c("Gene_ID" = "gene_id"))
+#I had to write out the dataframe to file so as to be able to use the "unique' function to take the unique genes in the dataframe
+write.table(rftrees, file = "Z:/data/mesa_models/python_ml_models/rf_cv_gene_param.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+rftrees <- read.table(file = "Z:/data/mesa_models/python_ml_models/rf_cv_gene_param.txt", header=T)
+#rftrees <- as.data.frame(rftrees)
+rftrees <- rftrees[unique(rftrees$Gene_ID),]
+names(rftrees) <- c('gene_id', 'gene_name', '50','100','150','200','250','300','350','400','450','500')
+rftrees <- rftrees[,c(3:12)]
+
+trees <- c(50,100,150,200,250,300,350,400,450,500)
+
+#matplot(rftrees, type = c("p"),pch=1,col = 1:4) #plot
+
+cl <- rainbow(length(rftrees$`50`))
+plot(trees, rftrees[1,], type = 'o', xlab = "Trees", ylab = "CV R2", main = "RF Tree", ylim = c(0.5,1), col=cl[1])
+
+for (i in 2:length(rftrees$`50`)){
+  lines(trees, rftrees[i,], type = "o", col=cl[i])
+}
+
+library(ggplot2)
+
+p = ggplot(rftrees) + 
+  geom_line(aes(x = trees, y = rftrees[1,]), color = "blue")# +
+  #geom_line(data = prescription2, aes(x = dates, y = Difference), color = "red") +
+  #xlab('Dates') +
+  #ylab('percent.change')
+
+print(p)
+ 
