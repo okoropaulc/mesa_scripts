@@ -828,4 +828,94 @@ p = ggplot(rftrees) +
   #ylab('percent.change')
 
 print(p)
- 
+
+
+####################################################################################################
+#Plot 5, 50 500 trees
+
+#Plot the different trees of the Random Forest
+brf <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/best_grid_rf_all_chrom.txt", header=T)
+prf <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/AFA_rf_100_to_500tree_cv_full_chr.txt", header=T)
+
+#Start by taking genes with best CV R2 > 0.3
+#Then use the genes to subset the dataframe of random forest trees
+brf <- subset(brf, CV_R2 > 0.5)
+brf <- brf[,c(1,2)]
+brf$Gene_ID <- as.character(brf$Gene_ID)
+
+prf <- prf[,c(1,4:13)]
+prf$gene_id <- as.character(prf$gene_id)
+
+library(tidyverse)
+
+rftrees <- inner_join(brf, prf, by = c("Gene_ID" = "gene_id"))
+#I had to write out the dataframe to file so as to be able to use the "unique' function to take the unique genes in the dataframe
+write.table(rftrees, file = "Z:/data/mesa_models/python_ml_models/rf_cv_gene_param.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+rftrees <- read.table(file = "Z:/data/mesa_models/python_ml_models/rf_cv_gene_param.txt", header=T)
+rftrees$Gene_ID <- as.character(rftrees$Gene_ID)
+
+rf_afa <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/AFA_rf_5tree_cv_full_chr.txt", header=T, sep="\t")
+rf_afa <- rf_afa[,c(1,3)]
+rf_afa$Gene_ID <- as.character(rf_afa$Gene_ID)
+rf5t <- rf_afa
+rf5t$Gene_ID <- as.character(rf5t$Gene_ID)
+
+rftrees <- inner_join(rf5t, rftrees, by = c("Gene_ID" = "Gene_ID"))
+
+#I had to write out the dataframe to file so as to be able to use the "unique' function to take the unique genes in the dataframe
+write.table(rftrees, file = "Z:/data/mesa_models/python_ml_models/rf_cv_gene_param.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+rftrees <- read.table(file = "Z:/data/mesa_models/python_ml_models/rf_cv_gene_param.txt", header=T)
+
+rftrees <- rftrees[unique(rftrees$Gene_ID),]
+names(rftrees) <- c('gene_id', '5', 'gene_name', '50','100','150','200','250','300','350','400','450','500')
+rftrees <- rftrees[,c(2,4:13)]
+rownames(rftrees) <- c(1:length(rftrees$`5`))
+
+#Take out only 3 trees 5, 50, and 500
+rf3 <- rftrees[,c(1,2,11)]
+
+trees <- c(5,50,500)
+trees <- as.factor(trees)
+
+cl <- rainbow(length(rftrees$`5`))
+plot(trees, rf3[1,], type = 'o', xlab = "Trees", ylab = "CV R2", main = "RF Tree", ylim = c(0.3,1), col=cl[1])
+
+for (i in 2:length(rftrees$`50`)){
+  lines(trees, rf3[i,], type = "o", col=cl[i+3])
+}
+barplot(as.matrix(rf3), legend.text = T, col = c('red','blue','black'), ylim = c(0.5,1))
+
+
+
+############################################################################################
+# Merge HIS best grids
+
+"%&%" <- function(a,b) paste(a,b, sep = "")
+
+
+#Merging all the chunks that were complete
+algs <- c("rf", "svr", "knn")
+pop <- "HIS"
+
+
+for (alg in algs){
+  allchr <- NULL
+  for (no in 1:22){
+    allchr <- rbind(allchr, read.table(file = "Z:/data/mesa_models/python_ml_models/his_results/grid_split/" %&% pop %&% "_best_grid_split_"%&% alg %&% "_cv_chr"%&% no %&% "_chunk1.txt", header = T, sep = "\t", stringsAsFactors = F))
+  }
+  write.table(allchr, file="Z:/data/mesa_models/python_ml_models/merged_chunk_results/" %&% pop %&% "_best_grid_"%&% alg %&% "_all_chrom.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+}
+
+bgrid_his <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/HIS_best_grid_rf_all_chrom.txt", header = T)
+
+#This is the correct way I Should do merge all the chunks
+for (alg in algs){
+  allchr <- NULL
+  for (no in 1:22){
+    #allchr <- NULL
+    for (k in 1:5){
+      allchr <- rbind(allchr, read.table(file = "Z:/data/mesa_models/python_ml_models/his_results/grid_split/" %&% pop %&% "_best_grid_split_"%&% alg %&% "_cv_chr"%&% no %&% "_chunk" %&% k %&% ".txt", header = T, sep = "\t", stringsAsFactors = F))
+    }
+  }
+  write.table(allchr, file="Z:/data/mesa_models/python_ml_models/merged_chunk_results/" %&% pop %&% "_best_grid_"%&% alg %&% "_all_chrom.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+}
