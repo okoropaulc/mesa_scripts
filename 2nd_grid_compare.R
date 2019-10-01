@@ -476,10 +476,8 @@ ggplot(elrf, aes(x=elnet, y=rfdif)) + ggtitle("Spearman Corr of Observed and Pre
   ylab("RF - Elastic Net") + xlab("Elastic Net") +
   geom_point(shape=1) + geom_abline(slope=0,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
 
-ggscatter(elrf, x = "elnet", y = "rf", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
-          cor.coef = TRUE, cor.method = "pearson",
-          xlab = "Elastic Net", ylab = "RF Optimized", title = "Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)",
-          xlim = c(-1, 1), ylim = c(-1, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+#Count how many genes where knn minus elnet > 0. That is, how many genes where svr outperformed elnet. total genes = 3227
+sum(elrf$rfdif > 0) # answer = 1443.Therefore elnet performed better only on 1784 genes
 
 #Compare with non optimized and optimized rf
 orf <- read.table(file="Z:/data/mesa_models/python_ml_models/results/AFA_2_METS_rf_cor_test_all_chr.txt", header = T, sep = "\t")
@@ -522,6 +520,9 @@ ggplot(elsvr, aes(x=elnet, y=svrdif)) + ggtitle("Spearman Corr of Observed and P
   ylab("SVR - Elastic Net") + xlab("Elastic Net") +
   geom_point(shape=1) + geom_abline(slope=0,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
 
+#Count how many genes where svr minus elnet > 0. That is, how many genes where svr outperformed elnet. total genes = 3227
+sum(elsvr$svrdif > 0) # answer = 1297.Therefore elnet performed better only on 1930 genes
+
 #Compare with non optimized and optimized svr
 osvr <- read.table(file="Z:/data/mesa_models/python_ml_models/results/AFA_2_METS_svr_rbf_cor_test_all_chr.txt", header = T, sep = "\t")
 osvr <- osvr[,c(1,9)]
@@ -549,6 +550,9 @@ elknn <- cbind(elknn, knndif)
 ggplot(elknn, aes(x=elnet, y=knndif)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)") + 
   ylab("KNN - Elastic Net") + xlab("Elastic Net") +
   geom_point(shape=1) + geom_abline(slope=0,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+#Count how many genes where knn minus elnet > 0. That is, how many genes where svr outperformed elnet. total genes = 3228
+sum(elknn$knndif > 0) # answer = 1221.Therefore elnet performed better only on 2007 genes
 
 #Compare with non optimized and optimized KNN
 oknn <- read.table(file="Z:/data/mesa_models/python_ml_models/results/AFA_2_METS_knn_cor_test_all_chr.txt", header = T, sep = "\t")
@@ -887,6 +891,14 @@ barplot(as.matrix(rf3), legend.text = T, col = c('red','blue','black'), ylim = c
 
 
 
+
+
+
+
+
+
+
+
 ############################################################################################
 # Merge HIS best grids
 
@@ -897,18 +909,30 @@ barplot(as.matrix(rf3), legend.text = T, col = c('red','blue','black'), ylim = c
 algs <- c("rf", "svr", "knn")
 pop <- "HIS"
 
+#use this to merge all chunks into their singular chromosomes
+#first check what each chunk file looks like
+chk1rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/his_results/grid_split/HIS_best_grid_split_rf_cv_chr1_chunk1.txt", header=T)
+chk2rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/his_results/grid_split/HIS_best_grid_split_rf_cv_chr1_chunk2.txt", header=T)
+chk3rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/his_results/grid_split/HIS_best_grid_split_rf_cv_chr1_chunk3.txt", header=T)
+chk4rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/his_results/grid_split/HIS_best_grid_split_rf_cv_chr1_chunk4.txt", header=T)
+chk5rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/his_results/grid_split/HIS_best_grid_split_rf_cv_chr1_chunk5.txt", header=T)
+
+allchk1 <- rbind(chk1rf, chk2rf, chk3rf, chk4rf, chk5rf)
 
 for (alg in algs){
-  allchr <- NULL
   for (no in 1:22){
-    allchr <- rbind(allchr, read.table(file = "Z:/data/mesa_models/python_ml_models/his_results/grid_split/" %&% pop %&% "_best_grid_split_"%&% alg %&% "_cv_chr"%&% no %&% "_chunk1.txt", header = T, sep = "\t", stringsAsFactors = F))
+    allchk <- NULL
+    for (k in 1:5){
+      allchk <- rbind(allchk, read.table(file = "Z:/data/mesa_models/python_ml_models/his_results/grid_split/" %&% pop %&% "_best_grid_split_"%&% alg %&% "_cv_chr" %&% no %&% "_chunk" %&% k %&% ".txt", header = T, sep = "\t", stringsAsFactors = F))
+    }
+    write.table(allchk, file="Z:/data/mesa_models/python_ml_models/merged_chunk_results/" %&% pop %&% "_best_grid_"%&% alg %&% "_chr" %&% no %&% "_full.txt", quote = FALSE, sep = "\t", row.names = FALSE)
   }
-  write.table(allchr, file="Z:/data/mesa_models/python_ml_models/merged_chunk_results/" %&% pop %&% "_best_grid_"%&% alg %&% "_all_chrom.txt", quote = FALSE, sep = "\t", row.names = FALSE)
 }
 
-bgrid_his <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/HIS_best_grid_rf_all_chrom.txt", header = T)
+bgrid_his_chr1_rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/HIS_best_grid_rf_chr1_full.txt", header = T)
+bgrid_his_chr1_rf <- bgrid_his_chr1_rf[unique(bgrid_his_chr1_rf$Gene_Name),]
 
-#This is the correct way I Should do merge all the chunks
+#This is the correct way I Should do merge all the chunks and the chromosomes into one single large file
 for (alg in algs){
   allchr <- NULL
   for (no in 1:22){
@@ -919,3 +943,491 @@ for (alg in algs){
   }
   write.table(allchr, file="Z:/data/mesa_models/python_ml_models/merged_chunk_results/" %&% pop %&% "_best_grid_"%&% alg %&% "_all_chrom.txt", quote = FALSE, sep = "\t", row.names = FALSE)
 }
+
+bgrid_his_rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/HIS_best_grid_rf_all_chrom.txt", header = T)
+bgrid_his_knn <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/HIS_best_grid_knn_all_chrom.txt", header = T)
+bgrid_his_svr <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/HIS_best_grid_svr_all_chrom.txt", header = T)
+
+bgrid_his_knn <- bgrid_his_knn[unique(bgrid_his_knn$Gene_Name),]
+
+#Because the total genes in all chroms was 9501 (should be 9623), I used the loop below to merge all chroms again
+for (alg in algs){
+  allchr <- NULL
+  for (no in 1:22){
+    allchr <- rbind(allchr, read.table(file="Z:/data/mesa_models/python_ml_models/merged_chunk_results/HIS_best_grid_"%&% alg %&% "_chr" %&% no %&% "_full.txt", header = T, sep = "\t", stringsAsFactors = F))
+  }
+}
+
+################################################################################################################################
+# Merge HIS 2 METS
+
+"%&%" <- function(a,b) paste(a,b, sep = "")
+
+knn <- NULL
+rf <- NULL
+svr <- NULL
+pop <- "HIS"
+
+for (chrom in 1:22) {
+  no <- as.character(chrom)
+  knn <- rbind(knn, read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_knn_cor_test_chr" %&% chrom %&% ".txt", header = T, stringsAsFactors = F, sep = "\t"))
+  rf <- rbind(rf, read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_rf_cor_test_chr" %&% chrom %&% ".txt", header = T, stringsAsFactors = F, sep = "\t"))
+  svr <- rbind(svr, read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_svr_cor_test_chr" %&% chrom %&% ".txt", header = T, stringsAsFactors = F, sep = "\t"))
+}
+
+#write out the merged full chromosomes
+write.table(knn, file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_knn_cor_test_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+write.table(rf, file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_rf_cor_test_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+write.table(svr, file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_svr_cor_test_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+
+
+#############################################################################################################################
+#Compare model Optimized performance on HIS 2 METS as against Elastic Net
+#HIS 2METS
+
+his_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_HIS_2_METS.txt", header = T)
+his_2_mets$gene <- as.character(his_2_mets$gene) # 6512 genes
+his_2_mets <- subset(his_2_mets, spearman > 0.1) #2146
+
+knn <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_HIS_2_METS_knn_cor_test_full_chr.txt", header = T)
+knn <- knn[,c(1,9)]
+knn$gene_id <- as.character(knn$gene_id) #8807 genes
+knn <- subset(knn, knn$spearman_yobs_vs_ypred..d. > 0.1) #2239
+
+rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_HIS_2_METS_rf_cor_test_full_chr.txt", header = T)
+rf <- rf[,c(1,9)]
+rf$gene_id <- as.character(rf$gene_id) #8807
+rf <- subset(rf, rf$spearman_yobs_vs_ypred..d. > 0.1) #2573
+
+svr <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_HIS_2_METS_svr_cor_test_full_chr.txt", header = T)
+svr <- svr[,c(1,9)]
+svr$gene_id <- as.character(svr$gene_id) #8807
+svr <- subset(svr, svr$spearman_yobs_vs_ypred..d. > 0.1) #2416
+
+#Take the overlapping genes between elastic net and each model
+#RF
+library(dplyr)
+library(ggplot2)
+library("ggpubr")
+elrf <- inner_join(his_2_mets, rf, by = c("gene" = "gene_id")) #1168
+elrf <- elrf[,c(2,3)]
+names(elrf) <- c("elnet", "rf")
+
+#Before plotting, take the difference of rf and elnet (rf - elnet) plot on y axis against elnet on x axis
+rfdif <- elrf$rf - elrf$elnet
+
+ggplot(elrf, aes(x=elnet, y=rf)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("RF Optimized") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+ggscatter(elrf, x = "elnet", y = "rf", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "RF Optimized", title = "Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)",
+          xlim = c(-1, 1), ylim = c(-1, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+#Plot elnet vs (rf - elnet)
+elrf <- cbind(elrf, rfdif)
+
+ggplot(elrf, aes(x=elnet, y=rfdif)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("RF - Elastic Net") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=0,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+#Count how many genes where rf minus elnet > 0. That is, how mnay genes where rf outperformed elnet. total genes = 6110
+sum(elrf$rfdif > 0) # answer = 3064.Therefore elnet performed better only on 3046 genes
+#after r >0.1 rf has 605 genes better
+
+#Compare with non optimized and optimized rf
+orf <- read.table(file="Z:/data/mesa_models/python_ml_models/results/HIS_2_METS_rf_cor_test_all_chr.txt", header = T, sep = "\t")
+orf <- orf[,c(1,9)]
+orf$gene_id <- as.character(orf$gene_id)
+
+rforf <- inner_join(rf, orf, by = c("gene_id" = "gene_id"))
+names(rforf) <- c("gene", "rf", "orf")
+
+ggplot(rforf, aes(x=rf, y=orf)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("Non Optimized RF") + xlab("Optimized RF") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+ggscatter(rforf, x = "rf", y = "orf", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Optimized RF", ylab = "Non Optimized RF", title = "Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)",
+          xlim = c(-1, 1), ylim = c(-1, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+orfdif <- rforf$orf - rforf$rf
+rforf <- cbind(rforf, orfdif) #I think raandom forest with fixed 100 trees is the most optimal
+
+ggplot(rforf, aes(x=rf, y=orfdif)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("Non Optimized - Optimized RF") + xlab("Non Optimized") +
+  geom_point(shape=1) + geom_abline(slope=0,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+#SVR
+library(dplyr)
+library(ggplot2)
+library("ggpubr")
+elsvr <- inner_join(his_2_mets, svr, by = c("gene" = "gene_id")) #1057
+elsvr <- elsvr[,c(2,3)]
+names(elsvr) <- c("elnet", "svr")
+ggplot(elsvr, aes(x=elnet, y=svr)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("SVR Optimized") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+ggscatter(elsvr, x = "elnet", y = "svr", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "SVR Optimized", title = "Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)",
+          xlim = c(-1, 1), ylim = c(-1, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+#Plot elnet vs SVR - Elnet
+svrdif <- elsvr$svr - elsvr$elnet
+elsvr <- cbind(elsvr, svrdif)
+
+ggplot(elsvr, aes(x=elnet, y=svrdif)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("SVR - Elastic Net") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=0,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+#Count how many genes where svr minus elnet > 0. That is, how many genes where svr outperformed elnet. total genes = 6110
+sum(elsvr$svrdif > 0) # answer = 2908.Therefore elnet performed better only on 3202 genes
+#after r > 0.1 487
+
+#Compare with non optimized and optimized svr
+osvr <- read.table(file="Z:/data/mesa_models/python_ml_models/results/AFA_2_METS_svr_rbf_cor_test_all_chr.txt", header = T, sep = "\t")
+osvr <- osvr[,c(1,9)]
+osvr$gene_id <- as.character(osvr$gene_id)
+
+#KNN
+library(dplyr)
+library(ggplot2)
+library("ggpubr")
+elknn <- inner_join(his_2_mets, knn, by = c("gene" = "gene_id")) #877
+elknn <- elknn[,c(2,3)]
+names(elknn) <- c("elnet", "knn")
+ggplot(elknn, aes(x=elnet, y=knn)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("KNN Optimized") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+ggscatter(elknn, x = "elnet", y = "knn", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "KNN Optimized", title = "Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)",
+          xlim = c(-1, 1), ylim = c(-1, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+#Plot elnet vs knn - elnet
+knndif <- elknn$knn - elknn$elnet
+elknn <- cbind(elknn, knndif)
+ggplot(elknn, aes(x=elnet, y=knndif)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("KNN - Elastic Net") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=0,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+#Count how many genes where knn minus elnet > 0. That is, how many genes where svr outperformed elnet. total genes = 6110
+sum(elknn$knndif > 0) # answer = 2781.Therefore elnet performed better only on 3329 genes
+# after r > 0.1 375-
+
+#Compare with non optimized and optimized KNN
+oknn <- read.table(file="Z:/data/mesa_models/python_ml_models/results/AFA_2_METS_knn_cor_test_all_chr.txt", header = T, sep = "\t")
+oknn <- oknn[,c(1,9)]
+oknn$gene_id <- as.character(oknn$gene_id)
+
+knnoknn <- inner_join(knn, oknn, by = c("gene_id" = "gene_id"))
+names(knnoknn) <- c("gene", "knn", "oknn")
+
+ggplot(knnoknn, aes(x=knn, y=oknn)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)") + 
+  ylab("Non Optimized KNN") + xlab("Optimized KNN") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+ggscatter(knnoknn, x = "knn", y = "oknn", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Optimized KNN", ylab = "Non Optimized KNN", title = "Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)",
+          xlim = c(-1, 1), ylim = c(-1, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+
+
+###################################################################################################################################
+
+his_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_HIS_2_METS.txt", header = T)
+his_2_mets$gene <- as.character(his_2_mets$gene)
+
+rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_HIS_2_METS_rf_cor_test_full_chr.txt", header = T)
+rf <- rf[,c(1,9)]
+rf$gene_id <- as.character(rf$gene_id)
+
+
+
+cau6_2 <- read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/CAU_best_grid_split_rf_cv_chr6_chunk2.txt", header = T)
+
+
+
+
+
+
+
+
+
+##############################################################################################################################
+# Merge CAU best grids
+
+"%&%" <- function(a,b) paste(a,b, sep = "")
+
+
+#Merging all the chunks that were complete
+algs <- c("rf", "svr", "knn")
+pop <- "CAU"
+
+#use this to merge all chunks into their singular chromosomes
+#first check what each chunk file looks like
+# by the date 1 october 2019 9:57AM it is remaining 12 genes in chr 6 chunk 2 ie 82/104
+
+chk1rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/CAU_best_grid_split_rf_cv_chr1_chunk1.txt", header=T)
+chk2rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/CAU_best_grid_split_rf_cv_chr1_chunk2.txt", header=T)
+chk3rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/CAU_best_grid_split_rf_cv_chr1_chunk3.txt", header=T)
+chk4rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/CAU_best_grid_split_rf_cv_chr1_chunk4.txt", header=T)
+chk5rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/CAU_best_grid_split_rf_cv_chr1_chunk5.txt", header=T)
+
+allchk1 <- rbind(chk1rf, chk2rf, chk3rf, chk4rf, chk5rf)
+
+for (alg in algs){
+  for (no in 1:22){
+    allchk <- NULL
+    for (k in 1:5){
+      allchk <- rbind(allchk, read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/" %&% pop %&% "_best_grid_split_"%&% alg %&% "_cv_chr" %&% no %&% "_chunk" %&% k %&% ".txt", header = T, sep = "\t", stringsAsFactors = F))
+    }
+    write.table(allchk, file="Z:/data/mesa_models/python_ml_models/merged_chunk_results/" %&% pop %&% "_best_grid_"%&% alg %&% "_chr" %&% no %&% "_full.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+  }
+}
+
+bgrid_cau_chr1_rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/CAU_best_grid_rf_chr1_full.txt", header = T)
+bgrid_cau_chr1_rf <- bgrid_his_chr1_rf[unique(bgrid_his_chr1_rf$Gene_Name),]
+
+#This is the correct way I Should do merge all the chunks and the chromosomes into one single large file
+for (alg in algs){
+  allchr <- NULL
+  for (no in 1:22){
+    #allchr <- NULL
+    for (k in 1:5){
+      allchr <- rbind(allchr, read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/" %&% pop %&% "_best_grid_split_"%&% alg %&% "_cv_chr"%&% no %&% "_chunk" %&% k %&% ".txt", header = T, sep = "\t", stringsAsFactors = F))
+    }
+  }
+  write.table(allchr, file="Z:/data/mesa_models/python_ml_models/merged_chunk_results/" %&% pop %&% "_best_grid_"%&% alg %&% "_all_chrom.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+}
+
+bgrid_cau_rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/CAU_best_grid_rf_all_chrom.txt", header = T)
+bgrid_cau_knn <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/CAU_best_grid_knn_all_chrom.txt", header = T)
+bgrid_cau_svr <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/CAU_best_grid_svr_all_chrom.txt", header = T)
+
+bgrid_his_knn <- bgrid_his_knn[unique(bgrid_his_knn$Gene_Name),]
+
+#Because the total genes in all chroms was 9479 (should be 9623), I used the loop below to merge all chroms again
+for (alg in algs){
+  allchr <- NULL
+  for (no in 1:22){
+    allchr <- rbind(allchr, read.table(file="Z:/data/mesa_models/python_ml_models/merged_chunk_results/HIS_best_grid_"%&% alg %&% "_chr" %&% no %&% "_full.txt", header = T, sep = "\t", stringsAsFactors = F))
+  }
+}
+
+################################################################################################################################
+# Merge CAU 2 METS
+
+"%&%" <- function(a,b) paste(a,b, sep = "")
+
+knn <- NULL
+rf <- NULL
+svr <- NULL
+pop <- "HIS"
+
+for (chrom in 1:22) {
+  no <- as.character(chrom)
+  knn <- rbind(knn, read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_knn_cor_test_chr" %&% chrom %&% ".txt", header = T, stringsAsFactors = F, sep = "\t"))
+  rf <- rbind(rf, read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_rf_cor_test_chr" %&% chrom %&% ".txt", header = T, stringsAsFactors = F, sep = "\t"))
+  svr <- rbind(svr, read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_svr_cor_test_chr" %&% chrom %&% ".txt", header = T, stringsAsFactors = F, sep = "\t"))
+}
+
+#write out the merged full chromosomes
+write.table(knn, file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_knn_cor_test_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+write.table(rf, file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_rf_cor_test_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+write.table(svr, file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_svr_cor_test_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+
+
+#############################################################################################################################
+#Compare model Optimized performance on HIS 2 METS as against Elastic Net
+#HIS 2METS
+
+his_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_HIS_2_METS.txt", header = T)
+his_2_mets$gene <- as.character(his_2_mets$gene)
+
+knn <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_HIS_2_METS_knn_cor_test_full_chr.txt", header = T)
+knn <- knn[,c(1,9)]
+knn$gene_id <- as.character(knn$gene_id)
+
+rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_HIS_2_METS_rf_cor_test_full_chr.txt", header = T)
+rf <- rf[,c(1,9)]
+rf$gene_id <- as.character(rf$gene_id)
+
+svr <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_HIS_2_METS_svr_cor_test_full_chr.txt", header = T)
+svr <- svr[,c(1,9)]
+svr$gene_id <- as.character(svr$gene_id)
+
+#Take the overlapping genes between elastic net and each model
+#RF
+library(dplyr)
+library(ggplot2)
+library("ggpubr")
+elrf <- inner_join(his_2_mets, rf, by = c("gene" = "gene_id"))
+elrf <- elrf[,c(2,3)]
+names(elrf) <- c("elnet", "rf")
+
+#Before plotting, take the difference of rf and elnet (rf - elnet) plot on y axis against elnet on x axis
+rfdif <- elrf$rf - elrf$elnet
+
+ggplot(elrf, aes(x=elnet, y=rf)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("RF Optimized") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+ggscatter(elrf, x = "elnet", y = "rf", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "RF Optimized", title = "Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)",
+          xlim = c(-1, 1), ylim = c(-1, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+#Plot elnet vs (rf - elnet)
+elrf <- cbind(elrf, rfdif)
+
+ggplot(elrf, aes(x=elnet, y=rfdif)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("RF - Elastic Net") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=0,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+#Count how many genes where rf minus elnet > 0. That is, how mnay genes where rf outperformed elnet. total genes = 6110
+sum(elrf$rfdif > 0) # answer = 3064.Therefore elnet performed better only on 3046 genes
+
+#Compare with non optimized and optimized rf
+orf <- read.table(file="Z:/data/mesa_models/python_ml_models/results/HIS_2_METS_rf_cor_test_all_chr.txt", header = T, sep = "\t")
+orf <- orf[,c(1,9)]
+orf$gene_id <- as.character(orf$gene_id)
+
+rforf <- inner_join(rf, orf, by = c("gene_id" = "gene_id"))
+names(rforf) <- c("gene", "rf", "orf")
+
+ggplot(rforf, aes(x=rf, y=orf)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("Non Optimized RF") + xlab("Optimized RF") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+ggscatter(rforf, x = "rf", y = "orf", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Optimized RF", ylab = "Non Optimized RF", title = "Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)",
+          xlim = c(-1, 1), ylim = c(-1, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+orfdif <- rforf$orf - rforf$rf
+rforf <- cbind(rforf, orfdif) #I think raandom forest with fixed 100 trees is the most optimal
+
+ggplot(rforf, aes(x=rf, y=orfdif)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("Non Optimized - Optimized RF") + xlab("Non Optimized") +
+  geom_point(shape=1) + geom_abline(slope=0,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+#SVR
+library(dplyr)
+library(ggplot2)
+library("ggpubr")
+elsvr <- inner_join(his_2_mets, svr, by = c("gene" = "gene_id"))
+elsvr <- elsvr[,c(2,3)]
+names(elsvr) <- c("elnet", "svr")
+ggplot(elsvr, aes(x=elnet, y=svr)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("SVR Optimized") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+ggscatter(elsvr, x = "elnet", y = "svr", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "SVR Optimized", title = "Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)",
+          xlim = c(-1, 1), ylim = c(-1, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+#Plot elnet vs SVR - Elnet
+svrdif <- elsvr$svr - elsvr$elnet
+elsvr <- cbind(elsvr, svrdif)
+
+ggplot(elsvr, aes(x=elnet, y=svrdif)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("SVR - Elastic Net") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=0,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+#Count how many genes where svr minus elnet > 0. That is, how many genes where svr outperformed elnet. total genes = 6110
+sum(elsvr$svrdif > 0) # answer = 2908.Therefore elnet performed better only on 3202 genes
+
+#Compare with non optimized and optimized svr
+osvr <- read.table(file="Z:/data/mesa_models/python_ml_models/results/AFA_2_METS_svr_rbf_cor_test_all_chr.txt", header = T, sep = "\t")
+osvr <- osvr[,c(1,9)]
+osvr$gene_id <- as.character(osvr$gene_id)
+
+#KNN
+library(dplyr)
+library(ggplot2)
+library("ggpubr")
+elknn <- inner_join(his_2_mets, knn, by = c("gene" = "gene_id"))
+elknn <- elknn[,c(2,3)]
+names(elknn) <- c("elnet", "knn")
+ggplot(elknn, aes(x=elnet, y=knn)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("KNN Optimized") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+ggscatter(elknn, x = "elnet", y = "knn", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "KNN Optimized", title = "Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)",
+          xlim = c(-1, 1), ylim = c(-1, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+#Plot elnet vs knn - elnet
+knndif <- elknn$knn - elknn$elnet
+elknn <- cbind(elknn, knndif)
+ggplot(elknn, aes(x=elnet, y=knndif)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("KNN - Elastic Net") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=0,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+#Count how many genes where knn minus elnet > 0. That is, how many genes where svr outperformed elnet. total genes = 6110
+sum(elknn$knndif > 0) # answer = 2781.Therefore elnet performed better only on 3329 genes
+
+#Compare with non optimized and optimized KNN
+oknn <- read.table(file="Z:/data/mesa_models/python_ml_models/results/AFA_2_METS_knn_cor_test_all_chr.txt", header = T, sep = "\t")
+oknn <- oknn[,c(1,9)]
+oknn$gene_id <- as.character(oknn$gene_id)
+
+knnoknn <- inner_join(knn, oknn, by = c("gene_id" = "gene_id"))
+names(knnoknn) <- c("gene", "knn", "oknn")
+
+ggplot(knnoknn, aes(x=knn, y=oknn)) + ggtitle("Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)") + 
+  ylab("Non Optimized KNN") + xlab("Optimized KNN") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+ggscatter(knnoknn, x = "knn", y = "oknn", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Optimized KNN", ylab = "Non Optimized KNN", title = "Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)",
+          xlim = c(-1, 1), ylim = c(-1, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+
+
+###################################################################################################################################
+
+his_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_HIS_2_METS.txt", header = T)
+his_2_mets$gene <- as.character(his_2_mets$gene)
+
+rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_HIS_2_METS_rf_cor_test_full_chr.txt", header = T)
+rf <- rf[,c(1,9)]
+rf$gene_id <- as.character(rf$gene_id)
+
+
+
+
+
+
+###############################################################################################################################
+#filter the ML models with CV R2 > 0.01
+#AFA
+elnet_afa <- read.table(file = "Z:/data/mesa_models/split_mesa/results/all_chr_AFA_model_summaries.txt", header = TRUE) #elnet
+elnet_afa_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_AFA_2_METS.txt", header = T)
+elnet_afa_2_mets$gene <- as.character(elnet_afa_2_mets$gene)
+
+rf_afa <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/best_grid_rf_all_chrom.txt", header = T)
+rf_afa <- subset(rf_afa, rf_afa$CV_R2 > 0.01)
+for (i in 1:length(rf_afa$Gene_ID)){
+  rf_afa$Gene_ID[i] <- gsub('\\.[0-9]+','',rf_afa$Gene_ID[i])
+} #just to remove the decimal places in the gene_id
+
+rf_afa$Gene_ID <- as.character(rf_afa$Gene_ID)
+
+rf_afa_2_mets <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_AFA_2_METS_rf_cor_test_full_chr.txt", header = T)
+rf_afa_2_mets$gene_id <- as.character(rf_afa_2_mets$gene_id)
+
+filt_rf_afa_2_mets <- inner_join(rf_afa, rf_afa_2_mets, by = c("Gene_ID" = "gene_id"))
+filt_rf_afa_2_mets <- filt_rf_afa_2_mets[,c(1,13)]
+
+filt_elnet_rf_afa_2_mets <- inner_join(elnet_afa_2_mets, filt_rf_afa_2_mets, by = c("gene" = "Gene_ID"))

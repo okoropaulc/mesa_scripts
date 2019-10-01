@@ -1,0 +1,1 @@
+parameters	gene_id	gene_name	chr	avg_cv_R2
