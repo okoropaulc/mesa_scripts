@@ -1229,7 +1229,7 @@ for (alg in algs){
 knn <- NULL
 rf <- NULL
 svr <- NULL
-pop <- "HIS"
+pop <- "CAU"
 
 for (chrom in 1:22) {
   no <- as.character(chrom)
@@ -1409,25 +1409,1105 @@ rf$gene_id <- as.character(rf$gene_id)
 
 
 
+
+
+
+
+
+
+
+
 ###############################################################################################################################
 #filter the ML models with CV R2 > 0.01
+library(dplyr)
+library(ggplot2)
+library("ggpubr")
 #AFA
-elnet_afa <- read.table(file = "Z:/data/mesa_models/split_mesa/results/all_chr_AFA_model_summaries.txt", header = TRUE) #elnet
+#elnet_afa <- read.table(file = "Z:/data/mesa_models/split_mesa/results/all_chr_AFA_model_summaries.txt", header = TRUE) #elnet
 elnet_afa_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_AFA_2_METS.txt", header = T)
 elnet_afa_2_mets$gene <- as.character(elnet_afa_2_mets$gene)
 
+#RF
 rf_afa <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/best_grid_rf_all_chrom.txt", header = T)
+rf_afa$Gene_ID <- as.character(rf_afa$Gene_ID)
 rf_afa <- subset(rf_afa, rf_afa$CV_R2 > 0.01)
 for (i in 1:length(rf_afa$Gene_ID)){
   rf_afa$Gene_ID[i] <- gsub('\\.[0-9]+','',rf_afa$Gene_ID[i])
 } #just to remove the decimal places in the gene_id
 
-rf_afa$Gene_ID <- as.character(rf_afa$Gene_ID)
 
 rf_afa_2_mets <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_AFA_2_METS_rf_cor_test_full_chr.txt", header = T)
 rf_afa_2_mets$gene_id <- as.character(rf_afa_2_mets$gene_id)
 
-filt_rf_afa_2_mets <- inner_join(rf_afa, rf_afa_2_mets, by = c("Gene_ID" = "gene_id"))
+filt_rf_afa_2_mets <- inner_join(rf_afa, rf_afa_2_mets, by = c("Gene_ID" = "gene_id")) #filter by CV R2 > 0.01
 filt_rf_afa_2_mets <- filt_rf_afa_2_mets[,c(1,13)]
+names(filt_rf_afa_2_mets) <- c("gene", "rf_spearman")
 
-filt_elnet_rf_afa_2_mets <- inner_join(elnet_afa_2_mets, filt_rf_afa_2_mets, by = c("gene" = "Gene_ID"))
+elnet_afa_2_mets_0.1 <- subset(elnet_afa_2_mets, spearman > 0.1)
+filt_rf_afa_2_mets_0.1 <- subset(filt_rf_afa_2_mets, rf_spearman > 0.1)
+filt_elnet_rf_afa_2_mets_0.1 <- inner_join(elnet_afa_2_mets_0.1, filt_rf_afa_2_mets_0.1, by = c("gene" = "gene"))
+#plot, NOTE all models here are optimized
+ggplot(filt_elnet_rf_afa_2_mets_0.1, aes(x=spearman, y=rf_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)") + 
+  ylab("Random Forest") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(0,1)) + ylim(c(0,1)) + 
+  theme_bw(20)
+
+ggscatter(filt_elnet_rf_afa_2_mets_0.1, x = "spearman", y = "rf_spearman", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "Random Forest",
+          xlim = c(0, 1), ylim = c(0, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")+
+          theme_classic2(20)
+  
+
+filt_elnet_rf_afa_2_mets <- inner_join(elnet_afa_2_mets, filt_rf_afa_2_mets, by = c("gene" = "gene"))
+sub_elnet_rf_afa_2_mets <- subset(filt_elnet_rf_afa_2_mets, spearman > 0.1 | rf_spearman > 0.1) #removes where both are < 0.1
+#suband_elnet_rf_afa_2_mets <- subset(filt_elnet_rf_afa_2_mets, spearman > 0.1 & rf_spearman > 0.1) # where both are > 0.1
+#Plot
+ggplot(sub_elnet_rf_afa_2_mets, aes(x=spearman, y=rf_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)") + 
+  ylab("Random Forest") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-0.4,1)) + ylim(c(-0.4,1)) + theme_bw()
+
+#Then find the genes where EN or RF is positive and the other negative 
+#Do FUMA on top 10 of theses genes
+rfpos <- subset(sub_elnet_rf_afa_2_mets, spearman < 0)
+enpos <- subset(sub_elnet_rf_afa_2_mets, rf_spearman < 0)
+
+##########
+#get the genes that are not in the other. rf genes not in en. also en genes not in rf
+#Do FUMA on top 10 of these genes
+rfonly <- left_join(filt_rf_afa_2_mets_0.1, elnet_afa_2_mets_0.1, by = c("gene" = "gene"))
+rfonly <- rfonly[is.na(rfonly$spearman),]
+rfonly <- anti_join(filt_rf_afa_2_mets_0.1, elnet_afa_2_mets_0.1, by = c("gene" = "gene")) #Better!
+rfonly_den <- data.frame(spearman=rfonly$rf_spearman, prediction=rep("RF Only", length(rfonly$rf_spearman)))
+
+
+enonly <- left_join(elnet_afa_2_mets_0.1, filt_rf_afa_2_mets_0.1,by = c("gene" = "gene"))
+enonly <- enonly[is.na(enonly$rf_spearman),]
+enonly <- anti_join(elnet_afa_2_mets_0.1, filt_rf_afa_2_mets_0.1,by = c("gene" = "gene"))
+enonly_den <- data.frame(spearman=enonly$spearman, prediction=rep("EN Only", length(enonly$spearman)))
+
+
+enplusrf_rf <- data.frame(spearman=filt_elnet_rf_afa_2_mets_0.1$rf_spearman, 
+                          prediction=rep("EN+RF RF Only",length(filt_elnet_rf_afa_2_mets_0.1$rf_spearman)))
+
+enplusrf_en <- data.frame(spearman=filt_elnet_rf_afa_2_mets_0.1$spearman, 
+                          prediction=rep("EN+RF EN Only",length(filt_elnet_rf_afa_2_mets_0.1$spearman)))
+
+
+den_afa_2_mets <- rbind(rfonly_den, enonly_den, enplusrf_rf, enplusrf_en)
+
+enonly_e <- anti_join(enonly,filt_elnet_rf_afa_2_mets_0.1,by = c("gene" = "gene"))
+#find the name of those genes
+gv18 <- read.table(file = "Z:/data/mesa_models/gencode.v18.annotation.parsed.txt", header = T)
+###########
+#Make bar plot with count of genes in only ML, EN, and EN intersect ML for genes R > 0.1
+gcount <- data.frame(ml=c("Random Forest", "Elastic NET", "Intersect"), no=c(239, 668, 928)) #rfonly, enonly, 928
+ggplot(data=gcount, aes(x=ml, y=no, fill=ml)) + geom_bar(stat="identity") + ylab("Gene Count") + xlab("Models") +
+  ggtitle("Genes in Models (AFA 2 METS)") + geom_text(aes(label=no), vjust=3, color="white", size=10) +
+  scale_fill_manual(values = c("blue","violet","red")) + 
+  theme_minimal(20) # scale_fill_manual is how to give my own color specification
+
+#Density plots R > 0.1
+ggplot(enonly, aes(x = spearman)) + scale_x_continuous(name = "Spearman Correlation > 0.1") +
+  scale_y_continuous(name = "Density") + ggtitle("Density plot of Genes only in Elastic Net (AFA 2 METS)") +
+  geom_density(fill = "red", colour = "red", alpha=0.6) + theme_bw() +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")#EN only genes
+
+ggplot(rfonly, aes(x = rf_spearman)) + scale_x_continuous(name = "Spearman Correlation > 0.1") +
+  scale_y_continuous(name = "Density") + ggtitle("Density plot of Genes only in Random Forest (AFA 2 METS)") +
+  geom_density(fill = "blue", colour = "blue", alpha=0.6) + theme_bw() +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")#RF only genes
+
+ggplot(filt_elnet_rf_afa_2_mets_0.1, aes(x = rf_spearman)) + scale_x_continuous(name = "Spearman Correlation > 0.1") +
+  scale_y_continuous(name = "Density") + ggtitle("Density plot of Genes in Intersect of RF and EN for Random Forest (AFA 2 METS)") +
+  geom_density(fill = "green", colour = "green", alpha=0.6) + theme_bw() +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed") #intersect of RF and EN
+
+ggplot(filt_elnet_rf_afa_2_mets_0.1, aes(x = spearman)) + scale_x_continuous(name = "Spearman Correlation > 0.1") +
+  scale_y_continuous(name = "Density") + ggtitle("Density plot of Genes in Intersect of RF and EN for Elastic Net (AFA 2 METS)") +
+  geom_density(fill = "green4", colour = "green4", alpha=0.6) + theme_bw() +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed") #intersect of RF and EN
+
+#find the mean of each ML group
+library(plyr)
+mu <- ddply(den_afa_2_mets, "prediction", summarise, grp.mean=mean(spearman))
+
+#Combine all density plot into one
+ggplot(den_afa_2_mets, aes(x = spearman, color=prediction)) + scale_x_continuous(name = "Spearman Correlation > 0.1") + 
+  ggtitle("Density plot of Genes in Intersect of RF and EN for Elastic Net (AFA 2 METS)") +
+  geom_density()+ theme_bw() +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")
+
+# lwd = line thickness
+ggplot(den_afa_2_mets, aes(x = spearman, color=prediction, lwd=1.5)) + 
+  scale_x_continuous(name = "Spearman Correlation > 0.1") +
+  geom_density()+ theme_classic(20) +
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=prediction),linetype="longdash", lwd=1) +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed") + 
+  scale_color_manual(values = c("red","blue","orange","violet"))
+
+
+# make density plot for EN intersect RF AFA 2 METS
+int_enrf_en <- data.frame(spearman=filt_elnet_rf_afa_2_mets_0.1$spearman, 
+                          prediction=rep("EN",length(filt_elnet_rf_afa_2_mets_0.1$spearman)))
+
+int_enrf_rf <- data.frame(spearman=filt_elnet_rf_afa_2_mets_0.1$rf_spearman, 
+                          prediction=rep("RF",length(filt_elnet_rf_afa_2_mets_0.1$rf_spearman)))
+
+den_int_enrf <- rbind(int_enrf_en, int_enrf_rf)
+#find the mean of each ML group
+library(plyr)
+mu <- ddply(den_int_enrf, "prediction", summarise, grp.mean=mean(spearman))
+
+# lwd = line thickness
+ggplot(den_int_enrf, aes(x = spearman, color=prediction, lwd=1.5)) + 
+  scale_x_continuous(name = "Spearman Correlation > 0.1") + 
+  ggtitle("Density plot of Intersect Genes for RF and EN (AFA 2 METS)") +
+  geom_density()+ theme_classic() +
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=prediction),linetype="longdash", lwd=1) +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")
+
+#SVR
+svr_afa <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/best_grid_svr_all_chrom.txt", header = T)
+svr_afa$Gene_ID <- as.character(svr_afa$Gene_ID)
+svr_afa <- subset(svr_afa, svr_afa$CV_R2 > 0.01)
+for (i in 1:length(svr_afa$Gene_ID)){
+  svr_afa$Gene_ID[i] <- gsub('\\.[0-9]+','',svr_afa$Gene_ID[i])
+} #just to remove the decimal places in the gene_id
+
+
+svr_afa_2_mets <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_AFA_2_METS_svr_cor_test_full_chr.txt", header = T)
+svr_afa_2_mets$gene_id <- as.character(svr_afa_2_mets$gene_id)
+
+filt_svr_afa_2_mets <- inner_join(svr_afa, svr_afa_2_mets, by = c("Gene_ID" = "gene_id")) #filter by CV R2 > 0.01
+filt_svr_afa_2_mets <- filt_svr_afa_2_mets[,c(1,13)]
+names(filt_svr_afa_2_mets) <- c("gene", "svr_spearman")
+
+elnet_afa_2_mets_0.1 <- subset(elnet_afa_2_mets, spearman > 0.1)
+filt_svr_afa_2_mets_0.1 <- subset(filt_svr_afa_2_mets, svr_spearman > 0.1)
+filt_elnet_svr_afa_2_mets_0.1 <- inner_join(elnet_afa_2_mets_0.1, filt_svr_afa_2_mets_0.1, by = c("gene" = "gene"))
+#plot, NOTE all models here are optimized
+ggplot(filt_elnet_svr_afa_2_mets_0.1, aes(x=spearman, y=svr_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)") + 
+  ylab("SVR") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(0,1)) + ylim(c(0,1))
+
+ggscatter(filt_elnet_svr_afa_2_mets_0.1, x = "spearman", y = "svr_spearman", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "SVR",
+          xlim = c(0, 1), ylim = c(0, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")+
+          theme_classic2(20)
+
+#intersect before filtering off R > 0.1 for each of ML and EN
+filt_elnet_svr_afa_2_mets <- inner_join(elnet_afa_2_mets, filt_svr_afa_2_mets, by = c("gene" = "gene"))
+sub_elnet_svr_afa_2_mets <- subset(filt_elnet_svr_afa_2_mets, spearman > 0.1 | svr_spearman > 0.1) #then filter off where both are < 0.1
+
+#Plot
+ggplot(sub_elnet_svr_afa_2_mets, aes(x=spearman, y=svr_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)") + 
+  ylab("SVR") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-0.4,1)) + ylim(c(-0.4,1)) + theme_bw()
+#Then find the genes where EN or SVR is positive and the other negative 
+#Do FUMA on top 10 of theses genes
+svrpos <- subset(sub_elnet_svr_afa_2_mets, spearman < 0)
+enpos_s <- subset(sub_elnet_svr_afa_2_mets, svr_spearman < 0)
+
+##########
+#get the genes that are not in the other. svr genes not in en. also en genes not in svr
+#Do FUMA on top 10 of these genes
+svronly <- anti_join(filt_svr_afa_2_mets_0.1, elnet_afa_2_mets_0.1, by = c("gene" = "gene")) #Better!
+
+enonly_s <- anti_join(elnet_afa_2_mets_0.1, filt_svr_afa_2_mets_0.1,by = c("gene" = "gene"))
+
+#find the name of those genes
+gv18 <- read.table(file = "Z:/data/mesa_models/gencode.v18.annotation.parsed.txt", header = T)
+###########
+#Make bar plot with count of genes in only ML, EN, and EN intersect ML for genes R > 0.1
+gcount <- data.frame(ml=c("SVR", "Elastic NET", "Intersect"), no=c(270, 904, 691)) #rfonly, enonly, 928
+ggplot(data=gcount, aes(x=ml, y=no, fill=ml)) + geom_bar(stat="identity") + ylab("Gene Count") + xlab("Models") +
+  ggtitle("Genes in Models (AFA 2 METS)") + geom_text(aes(label=no), vjust=1.6, color="white", size=3.5)+
+  theme_minimal() # I will see if I can combine rf and knn here
+
+
+#KNN
+knn_afa <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/best_grid_knn_all_chrom.txt", header = T)
+knn_afa$Gene_ID <- as.character(knn_afa$Gene_ID)
+knn_afa <- subset(knn_afa, knn_afa$CV_R2 > 0.01)
+for (i in 1:length(knn_afa$Gene_ID)){
+  knn_afa$Gene_ID[i] <- gsub('\\.[0-9]+','',knn_afa$Gene_ID[i])
+} #just to remove the decimal places in the gene_id
+
+
+knn_afa_2_mets <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_AFA_2_METS_knn_cor_test_full_chr.txt", header = T)
+knn_afa_2_mets$gene_id <- as.character(knn_afa_2_mets$gene_id)
+
+filt_knn_afa_2_mets <- inner_join(knn_afa, knn_afa_2_mets, by = c("Gene_ID" = "gene_id")) #filter by CV R2 > 0.01
+filt_knn_afa_2_mets <- filt_knn_afa_2_mets[,c(1,13)]
+names(filt_knn_afa_2_mets) <- c("gene", "knn_spearman")
+
+elnet_afa_2_mets_0.1 <- subset(elnet_afa_2_mets, spearman > 0.1)
+filt_knn_afa_2_mets_0.1 <- subset(filt_knn_afa_2_mets, knn_spearman > 0.1)
+filt_elnet_knn_afa_2_mets_0.1 <- inner_join(elnet_afa_2_mets_0.1, filt_knn_afa_2_mets_0.1, by = c("gene" = "gene"))
+#plot Intersect where both ML R > 0.1, NOTE all models here are optimized
+ggplot(filt_elnet_knn_afa_2_mets_0.1, aes(x=spearman, y=knn_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)") + 
+  ylab("KNN") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(0,1)) + ylim(c(0,1))
+
+ggscatter(filt_elnet_knn_afa_2_mets_0.1, x = "spearman", y = "knn_spearman", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "KNN",
+          xlim = c(0, 1), ylim = c(0, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")+
+          theme_classic2(20)
+
+#intersect before filtering off R > 0.1 for each of ML and EN
+filt_elnet_knn_afa_2_mets <- inner_join(elnet_afa_2_mets, filt_knn_afa_2_mets, by = c("gene" = "gene"))
+sub_elnet_knn_afa_2_mets <- subset(filt_elnet_knn_afa_2_mets, spearman > 0.1 | knn_spearman > 0.1) #then filter off where both are < 0.1
+
+#Plot
+ggplot(sub_elnet_knn_afa_2_mets, aes(x=spearman, y=knn_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)") + 
+  ylab("KNN") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-0.4,1)) + ylim(c(-0.4,1)) + theme_bw()
+#Then find the genes where EN or KNN is positive and the other negative 
+#Do FUMA on top 10 of theses genes
+knnpos <- subset(sub_elnet_knn_afa_2_mets, spearman < 0)
+enpos_k <- subset(sub_elnet_knn_afa_2_mets, knn_spearman < 0)
+
+##########
+#get the genes that are not in the other. svr genes not in en. also en genes not in svr
+#Do FUMA on top 10 of these genes
+knnonly <- anti_join(filt_knn_afa_2_mets_0.1, elnet_afa_2_mets_0.1, by = c("gene" = "gene")) #Better!
+
+enonly_k <- anti_join(elnet_afa_2_mets_0.1, filt_knn_afa_2_mets_0.1,by = c("gene" = "gene"))
+
+#find the name of those genes
+gv18 <- read.table(file = "Z:/data/mesa_models/gencode.v18.annotation.parsed.txt", header = T)
+###########
+#Make bar plot with count of genes in only ML, EN, and EN intersect ML for genes R > 0.1
+gcount <- data.frame(ml=c("KNN", "Elastic NET", "Intersect"), no=c(264, 1033, 560)) #rfonly, enonly, 928
+ggplot(data=gcount, aes(x=ml, y=no, fill=ml)) + geom_bar(stat="identity") + ylab("Gene Count") + xlab("Models") +
+  ggtitle("Genes in Models (AFA 2 METS)") + geom_text(aes(label=no), vjust=1.6, color="white", size=3.5)+
+  theme_minimal() # I will see if I can combine rf and knn here
+
+#Make bar plot with count of genes in only ML, EN+ML, and EN for genes R > 0.1
+gcount <- data.frame(ml=c("EN-RF", "EN+RF", "RF-EN", "EN-SVR", "EN+SVR", "SVR-EN",
+                          "EN-KNN", "EN+KNN", "KNN-EN"), no=c(668,928,239,904,691,270,1033,560,264)) #rfonly, enonly, 928
+ggplot(data=gcount, aes(x=ml, y=no, fill=ml)) + geom_bar(stat="identity") + ylab("Gene Count") + xlab("Models") +
+  ggtitle("Genes in Models (AFA 2 METS)") + geom_text(aes(label=no), vjust=1.6, color="white", size=3.5)+
+  theme_minimal() # I will see if I can combine rf and knn here
+
+#Make violin plot for all 3 population mesa to mets with EN for R > 0.1
+elnet_afa_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_AFA_2_METS.txt", header = T)
+elnet_afa_2_mets$gene <- as.character(elnet_afa_2_mets$gene)
+en_afa_2mets <- data.frame(spearman=elnet_afa_2_mets_0.1$spearman, prediction=rep("AFA_2_METS", length(elnet_afa_2_mets_0.1$spearman)))
+
+elnet_his_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_HIS_2_METS.txt", header = T)
+elnet_his_2_mets$gene <- as.character(elnet_his_2_mets$gene)
+elnet_his_2_mets_0.1 <- subset(elnet_his_2_mets, spearman > 0.1)
+en_his_2mets <- data.frame(spearman=elnet_his_2_mets_0.1$spearman, prediction=rep("HIS_2_METS", length(elnet_his_2_mets_0.1$spearman)))
+
+elnet_cau_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_CAU_2_METS.txt", header = T)
+elnet_cau_2_mets$gene <- as.character(elnet_cau_2_mets$gene)
+elnet_cau_2_mets_0.1 <- subset(elnet_cau_2_mets, spearman > 0.1)
+en_cau_2mets <- data.frame(spearman=elnet_cau_2_mets_0.1$spearman, prediction=rep("CAU_2_METS", length(elnet_cau_2_mets_0.1$spearman)))
+
+en_mesa_2_mets <- rbind(en_afa_2mets, en_his_2mets, en_cau_2mets)
+
+ggplot(en_mesa_2_mets, aes(x=prediction, y=spearman, color=prediction, 
+                           fill=prediction)) + 
+  geom_violin(trim = T) + geom_boxplot(width=0.2, color="black") +
+  stat_summary(fun.y=mean, geom = "point", size=3, color="white") + theme_linedraw(20) +
+  scale_y_continuous(breaks=seq(0.0, 1.0, 0.2), limits=c(0, 1.0))
+
+
+#Make violin plot for all 3 population mesa to mets with EN without doing R > 0.1
+elnet_afa_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_AFA_2_METS.txt", header = T)
+elnet_afa_2_mets$gene <- as.character(elnet_afa_2_mets$gene)
+en_afa_2mets <- data.frame(spearman=elnet_afa_2_mets$spearman, 
+                           prediction=rep("AFA_2_METS", length(elnet_afa_2_mets$spearman)))
+
+elnet_his_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_HIS_2_METS.txt", header = T)
+elnet_his_2_mets$gene <- as.character(elnet_his_2_mets$gene)
+en_his_2mets <- data.frame(spearman=elnet_his_2_mets$spearman, 
+                           prediction=rep("HIS_2_METS", length(elnet_his_2_mets$spearman)))
+
+elnet_cau_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_CAU_2_METS.txt", header = T)
+elnet_cau_2_mets$gene <- as.character(elnet_cau_2_mets$gene)
+en_cau_2mets <- data.frame(spearman=elnet_cau_2_mets$spearman, 
+                           prediction=rep("CAU_2_METS", length(elnet_cau_2_mets$spearman)))
+
+en_mesa_2_mets <- rbind(en_afa_2mets, en_his_2mets, en_cau_2mets)
+# Function to produce summary statistics (mean and +/- sd)
+
+ggplot(en_mesa_2_mets, aes(x=prediction, y=spearman, color=prediction, fill=prediction)) + 
+  geom_violin(trim = F) + geom_boxplot(width=0.2, color="black") + theme_minimal() + 
+  ggtitle("Elastic Net (MESA to METS)") +
+  stat_summary(fun.y=mean, geom = "point", size=3, color="white") + theme_linedraw() +
+  scale_y_continuous(breaks=seq(0.0, 1.0, 0.2), limits=c(0, 1.0))
+
+
+
+#Make density plot for all 4 ML models with ML R > 0.1 AFA 2 METS
+rf_0.1 <- data.frame(spearman=filt_rf_afa_2_mets_0.1$rf_spearman, 
+                     prediction=rep("RF", length(filt_rf_afa_2_mets_0.1$rf_spearman)))
+
+svr_0.1 <- data.frame(spearman=filt_svr_afa_2_mets_0.1$svr_spearman, 
+                     prediction=rep("SVR", length(filt_svr_afa_2_mets_0.1$svr_spearman)))
+
+knn_0.1 <- data.frame(spearman=filt_knn_afa_2_mets_0.1$knn_spearman, 
+                     prediction=rep("KNN", length(filt_knn_afa_2_mets_0.1$knn_spearman)))
+
+en_0.1 <- data.frame(spearman=elnet_afa_2_mets_0.1$spearman, 
+                     prediction=rep("EN", length(elnet_afa_2_mets_0.1$spearman)))
+den_4_ml <- rbind(rf_0.1, svr_0.1, knn_0.1, en_0.1)
+
+
+#find the mean of each ML group
+library(plyr)
+mu <- ddply(den_4_ml, "prediction", summarise, grp.mean=mean(spearman))
+
+# density plot for all ML in afa 2 mets
+# lwd = line thickness
+ggplot(den_4_ml, aes(x = spearman, color=prediction, lwd=1.5)) + 
+  scale_x_continuous(name = "Spearman Correlation > 0.1") + 
+  ggtitle("Density plot of Genes for All Models (AFA 2 METS)") +
+  geom_density()+ theme_classic() +
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=prediction),linetype="longdash", lwd=1) +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")
+
+
+
+
+
+
+
+
+#HIS
+
+###############################################################################################################################
+#filter the ML models with CV R2 > 0.01
+library(dplyr)
+library(ggplot2)
+library("ggpubr")
+#HIS
+#elnet_afa <- read.table(file = "Z:/data/mesa_models/split_mesa/results/all_chr_AFA_model_summaries.txt", header = TRUE) #elnet
+elnet_his_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_HIS_2_METS.txt", header = T)
+elnet_his_2_mets$gene <- as.character(elnet_his_2_mets$gene)
+
+#RF
+rf_his <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/HIS_best_grid_rf_all_chrom.txt", header = T)
+rf_his$Gene_ID <- as.character(rf_his$Gene_ID)
+rf_his <- subset(rf_his, rf_his$CV_R2 > 0.01)
+for (i in 1:length(rf_his$Gene_ID)){
+  rf_his$Gene_ID[i] <- gsub('\\.[0-9]+','',rf_his$Gene_ID[i])
+} #just to remove the decimal places in the gene_id
+
+
+rf_his_2_mets <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_HIS_2_METS_rf_cor_test_full_chr.txt", header = T)
+rf_his_2_mets$gene_id <- as.character(rf_his_2_mets$gene_id)
+
+filt_rf_his_2_mets <- inner_join(rf_his, rf_his_2_mets, by = c("Gene_ID" = "gene_id")) #filter by CV R2 > 0.01
+filt_rf_his_2_mets <- filt_rf_his_2_mets[,c(1,13)]
+names(filt_rf_his_2_mets) <- c("gene", "rf_spearman")
+
+elnet_his_2_mets_0.1 <- subset(elnet_his_2_mets, spearman > 0.1)
+filt_rf_his_2_mets_0.1 <- subset(filt_rf_his_2_mets, rf_spearman > 0.1)
+filt_elnet_rf_his_2_mets_0.1 <- inner_join(elnet_his_2_mets_0.1, filt_rf_his_2_mets_0.1, by = c("gene" = "gene"))
+#plot, NOTE all models here are optimized
+ggplot(filt_elnet_rf_his_2_mets_0.1, aes(x=spearman, y=rf_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("Random Forest") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(0,1)) + ylim(c(0,1))
+
+ggscatter(filt_elnet_rf_his_2_mets_0.1, x = "spearman", y = "rf_spearman", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "Random Forest", title = "Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)",
+          xlim = c(0, 1), ylim = c(0, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+filt_elnet_rf_his_2_mets <- inner_join(elnet_his_2_mets, filt_rf_his_2_mets, by = c("gene" = "gene"))
+sub_elnet_rf_his_2_mets <- subset(filt_elnet_rf_his_2_mets, spearman > 0.1 | rf_spearman > 0.1) #removes where both are < 0.1
+#suband_elnet_rf_afa_2_mets <- subset(filt_elnet_rf_afa_2_mets, spearman > 0.1 & rf_spearman > 0.1) # where both are > 0.1
+#Plot
+ggplot(sub_elnet_rf_his_2_mets, aes(x=spearman, y=rf_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)") + 
+  ylab("Random Forest") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-0.4,1)) + ylim(c(-0.4,1)) + theme_bw()
+
+#Then find the genes where EN or RF is positive and the other negative 
+#Do FUMA on top 10 of theses genes
+rfpos_his <- subset(sub_elnet_rf_his_2_mets, spearman < 0)
+enpos_his <- subset(sub_elnet_rf_his_2_mets, rf_spearman < 0)
+
+##########
+#get the genes that are not in the other. rf genes not in en. also en genes not in rf
+#Do FUMA on top 10 of these genes
+rfonly_his <- anti_join(filt_rf_his_2_mets_0.1, elnet_his_2_mets_0.1, by = c("gene" = "gene")) #Better!
+rfonly_den_his <- data.frame(spearman=rfonly_his$rf_spearman, prediction=rep("RF Only", length(rfonly_his$rf_spearman)))
+
+enonly_his <- anti_join(elnet_his_2_mets_0.1, filt_rf_his_2_mets_0.1,by = c("gene" = "gene"))
+enonly_den_his <- data.frame(spearman=enonly_his$spearman, prediction=rep("EN Only", length(enonly_his$spearman)))
+
+
+enplusrf_rf_his <- data.frame(spearman=filt_elnet_rf_his_2_mets_0.1$rf_spearman, 
+                          prediction=rep("EN+RF RF Only",length(filt_elnet_rf_his_2_mets_0.1$rf_spearman)))
+
+enplusrf_en_his <- data.frame(spearman=filt_elnet_rf_his_2_mets_0.1$spearman, 
+                          prediction=rep("EN+RF EN Only",length(filt_elnet_rf_his_2_mets_0.1$spearman)))
+
+
+den_his_2_mets <- rbind(rfonly_den_his, enonly_den_his, enplusrf_rf_his, enplusrf_en_his)
+
+#find the name of those genes
+gv18 <- read.table(file = "Z:/data/mesa_models/gencode.v18.annotation.parsed.txt", header = T)
+###########
+#Make bar plot with count of genes in only ML, EN, and EN intersect ML for genes R > 0.1
+gcount <- data.frame(ml=c("Random Forest", "Elastic NET", "Intersect"), no=c(355, 1356, 790)) #rfonly, enonly, 928
+ggplot(data=gcount, aes(x=ml, y=no, fill=ml)) + geom_bar(stat="identity") + ylab("Gene Count") + xlab("Models") +
+  ggtitle("Genes in Models (HIS 2 METS)") + geom_text(aes(label=no), vjust=1.6, color="white", size=3.5)+
+  theme_minimal() # I will see if I can combine svr and knn here
+
+#make density plot
+#find the mean of each ML group
+library(plyr)
+mu <- ddply(den_his_2_mets, "prediction", summarise, grp.mean=mean(spearman))
+
+#Combine all density plot into one
+# lwd = line thickness
+ggplot(den_his_2_mets, aes(x = spearman, color=prediction, lwd=1.5)) + 
+  scale_x_continuous(name = "Spearman Correlation > 0.1") + 
+  ggtitle("Density plot of Genes for RF and EN (HIS 2 METS)") +
+  geom_density()+ theme_classic() +
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=prediction),linetype="longdash", lwd=1) +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")
+
+
+# make density plot for EN intersect RF HIS 2 METS
+int_enrf_en_his <- data.frame(spearman=filt_elnet_rf_his_2_mets_0.1$spearman, 
+                          prediction=rep("EN",length(filt_elnet_rf_his_2_mets_0.1$spearman)))
+
+int_enrf_rf_his <- data.frame(spearman=filt_elnet_rf_his_2_mets_0.1$rf_spearman, 
+                          prediction=rep("RF",length(filt_elnet_rf_his_2_mets_0.1$rf_spearman)))
+
+den_int_enrf_his <- rbind(int_enrf_en_his, int_enrf_rf_his)
+#find the mean of each ML group
+library(plyr)
+mu <- ddply(den_int_enrf_his, "prediction", summarise, grp.mean=mean(spearman))
+
+# lwd = line thickness
+ggplot(den_int_enrf_his, aes(x = spearman, color=prediction, lwd=1.5)) + 
+  scale_x_continuous(name = "Spearman Correlation > 0.1") + 
+  ggtitle("Density plot of Intersect Genes for RF and EN (HIS 2 METS)") +
+  geom_density()+ theme_classic() +
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=prediction),linetype="longdash", lwd=1) +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")
+
+#SVR
+svr_his <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/HIS_best_grid_svr_all_chrom.txt", header = T)
+svr_his$Gene_ID <- as.character(svr_his$Gene_ID)
+svr_his <- subset(svr_his, svr_his$CV_R2 > 0.01)
+for (i in 1:length(svr_his$Gene_ID)){
+  svr_his$Gene_ID[i] <- gsub('\\.[0-9]+','',svr_his$Gene_ID[i])
+} #just to remove the decimal places in the gene_id
+
+
+svr_his_2_mets <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_HIS_2_METS_svr_cor_test_full_chr.txt", header = T)
+svr_his_2_mets$gene_id <- as.character(svr_his_2_mets$gene_id)
+
+filt_svr_his_2_mets <- inner_join(svr_his, svr_his_2_mets, by = c("Gene_ID" = "gene_id")) #filter by CV R2 > 0.01
+filt_svr_his_2_mets <- filt_svr_his_2_mets[,c(1,13)]
+names(filt_svr_his_2_mets) <- c("gene", "svr_spearman")
+
+elnet_his_2_mets_0.1 <- subset(elnet_his_2_mets, spearman > 0.1)
+filt_svr_his_2_mets_0.1 <- subset(filt_svr_his_2_mets, svr_spearman > 0.1)
+filt_elnet_svr_his_2_mets_0.1 <- inner_join(elnet_his_2_mets_0.1, filt_svr_his_2_mets_0.1, by = c("gene" = "gene"))
+#plot, NOTE all models here are optimized
+ggplot(filt_elnet_svr_his_2_mets_0.1, aes(x=spearman, y=svr_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("SVR") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(0,1)) + ylim(c(0,1))
+
+ggscatter(filt_elnet_svr_his_2_mets_0.1, x = "spearman", y = "svr_spearman", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "SVR", title = "Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)",
+          xlim = c(0, 1), ylim = c(0, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+#intersect before filtering off R > 0.1 for each of ML and EN
+filt_elnet_svr_his_2_mets <- inner_join(elnet_his_2_mets, filt_svr_his_2_mets, by = c("gene" = "gene"))
+sub_elnet_svr_his_2_mets <- subset(filt_elnet_svr_his_2_mets, spearman > 0.1 | svr_spearman > 0.1) #then filter off where both are < 0.1
+
+#Plot
+ggplot(sub_elnet_svr_his_2_mets, aes(x=spearman, y=svr_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("SVR") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-0.4,1)) + ylim(c(-0.4,1)) + theme_bw()
+#Then find the genes where EN or SVR is positive and the other negative 
+#Do FUMA on top 10 of theses genes
+svrpos_his <- subset(sub_elnet_svr_his_2_mets, spearman < 0)
+enpos_s_his <- subset(sub_elnet_svr_his_2_mets, svr_spearman < 0)
+
+##########
+#get the genes that are not in the other. svr genes not in en. also en genes not in svr
+#Do FUMA on top 10 of these genes
+svronly_his <- anti_join(filt_svr_his_2_mets_0.1, elnet_his_2_mets_0.1, by = c("gene" = "gene")) #Better!
+
+enonly_s_his <- anti_join(elnet_his_2_mets_0.1, filt_svr_his_2_mets_0.1,by = c("gene" = "gene"))
+
+#find the name of those genes
+gv18 <- read.table(file = "Z:/data/mesa_models/gencode.v18.annotation.parsed.txt", header = T)
+###########
+#Make bar plot with count of genes in only ML, EN, and EN intersect ML for genes R > 0.1
+gcount <- data.frame(ml=c("SVR", "Elastic NET", "Intersect"), no=c(347, 1442, 704)) #rfonly, enonly, 928
+ggplot(data=gcount, aes(x=ml, y=no, fill=ml)) + geom_bar(stat="identity") + ylab("Gene Count") + xlab("Models") +
+  ggtitle("Genes in Models (HIS 2 METS)") + geom_text(aes(label=no), vjust=1.6, color="white", size=3.5)+
+  theme_minimal() # I will see if I can combine rf and knn here
+
+
+#KNN
+knn_his <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/HIS_best_grid_knn_all_chrom.txt", header = T)
+knn_his$Gene_ID <- as.character(knn_his$Gene_ID)
+knn_his <- subset(knn_his, knn_his$CV_R2 > 0.01)
+for (i in 1:length(knn_his$Gene_ID)){
+  knn_his$Gene_ID[i] <- gsub('\\.[0-9]+','',knn_his$Gene_ID[i])
+} #just to remove the decimal places in the gene_id
+
+
+knn_his_2_mets <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_HIS_2_METS_knn_cor_test_full_chr.txt", header = T)
+knn_his_2_mets$gene_id <- as.character(knn_his_2_mets$gene_id)
+
+filt_knn_his_2_mets <- inner_join(knn_his, knn_his_2_mets, by = c("Gene_ID" = "gene_id")) #filter by CV R2 > 0.01
+filt_knn_his_2_mets <- filt_knn_his_2_mets[,c(1,13)]
+names(filt_knn_his_2_mets) <- c("gene", "knn_spearman")
+
+elnet_his_2_mets_0.1 <- subset(elnet_his_2_mets, spearman > 0.1)
+filt_knn_his_2_mets_0.1 <- subset(filt_knn_his_2_mets, knn_spearman > 0.1)
+filt_elnet_knn_his_2_mets_0.1 <- inner_join(elnet_his_2_mets_0.1, filt_knn_his_2_mets_0.1, by = c("gene" = "gene"))
+#plot Intersect where both ML R > 0.1, NOTE all models here are optimized
+ggplot(filt_elnet_knn_his_2_mets_0.1, aes(x=spearman, y=knn_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("KNN") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(0,1)) + ylim(c(0,1))
+
+ggscatter(filt_elnet_knn_his_2_mets_0.1, x = "spearman", y = "knn_spearman", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "KNN", title = "Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)",
+          xlim = c(0, 1), ylim = c(0, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+#intersect before filtering off R > 0.1 for each of ML and EN
+filt_elnet_knn_his_2_mets <- inner_join(elnet_his_2_mets, filt_knn_his_2_mets, by = c("gene" = "gene"))
+sub_elnet_knn_his_2_mets <- subset(filt_elnet_knn_his_2_mets, spearman > 0.1 | knn_spearman > 0.1) #then filter off where both are < 0.1
+
+#Plot
+ggplot(sub_elnet_knn_his_2_mets, aes(x=spearman, y=knn_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (HIS to METS)") + 
+  ylab("KNN") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-0.5,1)) + ylim(c(-0.5,1)) + theme_bw()
+#Then find the genes where EN or KNN is positive and the other negative 
+#Do FUMA on top 10 of theses genes
+knnpos_his <- subset(sub_elnet_knn_his_2_mets, spearman < 0)
+enpos_k_his <- subset(sub_elnet_knn_his_2_mets, knn_spearman < 0)
+
+##########
+#get the genes that are not in the other. svr genes not in en. also en genes not in svr
+#Do FUMA on top 10 of these genes
+knnonly_his <- anti_join(filt_knn_his_2_mets_0.1, elnet_his_2_mets_0.1, by = c("gene" = "gene")) #Better!
+
+enonly_k_his <- anti_join(elnet_his_2_mets_0.1, filt_knn_his_2_mets_0.1,by = c("gene" = "gene"))
+
+#find the name of those genes
+gv18 <- read.table(file = "Z:/data/mesa_models/gencode.v18.annotation.parsed.txt", header = T)
+###########
+#Make bar plot with count of genes in only ML, EN, and EN intersect ML for genes R > 0.1
+gcount <- data.frame(ml=c("KNN", "Elastic NET", "Intersect"), no=c(268, 1628, 518)) #rfonly, enonly, 928
+ggplot(data=gcount, aes(x=ml, y=no, fill=ml)) + geom_bar(stat="identity") + ylab("Gene Count") + xlab("Models") +
+  ggtitle("Genes in Models (HIS 2 METS)") + geom_text(aes(label=no), vjust=1.6, color="white", size=3.5)+
+  theme_minimal() # I will see if I can combine rf and knn here
+
+#Make bar plot with count of genes in only ML, EN+ML, and EN for genes R > 0.1
+gcount <- data.frame(ml=c("EN-RF", "EN+RF", "RF-EN", "EN-SVR", "EN+SVR", "SVR-EN",
+                          "EN-KNN", "EN+KNN", "KNN-EN"), no=c(1356,790,355,1442,704,347,1628,518,268)) #rfonly, enonly, 928
+ggplot(data=gcount, aes(x=ml, y=no, fill=ml)) + geom_bar(stat="identity") + ylab("Gene Count") + xlab("Models") +
+  ggtitle("Genes in Models (HIS 2 METS)") + geom_text(aes(label=no), vjust=1.6, color="white", size=3.5)+
+  theme_minimal() # I will see if I can combine rf and knn here
+
+#Make violin plot for all 3 population mesa to mets with EN
+elnet_afa_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_AFA_2_METS.txt", header = T)
+elnet_afa_2_mets$gene <- as.character(elnet_afa_2_mets$gene)
+en_afa_2mets <- data.frame(spearman=elnet_afa_2_mets_0.1$spearman, prediction=rep("AFA_2_METS", length(elnet_afa_2_mets_0.1$spearman)))
+
+elnet_his_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_HIS_2_METS.txt", header = T)
+elnet_his_2_mets$gene <- as.character(elnet_his_2_mets$gene)
+elnet_his_2_mets_0.1 <- subset(elnet_his_2_mets, spearman > 0.1)
+en_his_2mets <- data.frame(spearman=elnet_his_2_mets_0.1$spearman, prediction=rep("HIS_2_METS", length(elnet_his_2_mets_0.1$spearman)))
+
+elnet_cau_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_CAU_2_METS.txt", header = T)
+elnet_cau_2_mets$gene <- as.character(elnet_cau_2_mets$gene)
+elnet_cau_2_mets_0.1 <- subset(elnet_cau_2_mets, spearman > 0.1)
+en_cau_2mets <- data.frame(spearman=elnet_cau_2_mets_0.1$spearman, prediction=rep("CAU_2_METS", length(elnet_cau_2_mets_0.1$spearman)))
+
+en_mesa_2_mets <- rbind(en_afa_2mets, en_his_2mets, en_cau_2mets)
+# Function to produce summary statistics (mean and +/- sd)
+data_summary <- function(x) {
+  m <- mean(x)
+  ymin <- m-sd(x)
+  ymax <- m+sd(x)
+  return(c(y=m,ymin=ymin,ymax=ymax))
+}
+
+library(Hmisc)
+ggplot(en_mesa_2_mets, aes(x=prediction, y=spearman, color=prediction, 
+                           fill=prediction)) + 
+  geom_violin(trim = F) + geom_boxplot(width=0.2, color="black") + theme_minimal() + 
+  ggtitle("Elastic Net (MESA to METS)") +
+  scale_y_continuous(breaks=seq(0.0, 1.0, 0.2), limits=c(0, 1.0))#+
+#stat_summary(fun.y=mean, geom = "point", size=3, color="white")
+
+#Make density plot for all 4 ML models with ML R > 0.1 HIS 2 METS
+rf_0.1_his <- data.frame(spearman=filt_rf_his_2_mets_0.1$rf_spearman, 
+                     prediction=rep("RF", length(filt_rf_his_2_mets_0.1$rf_spearman)))
+
+svr_0.1_his <- data.frame(spearman=filt_svr_his_2_mets_0.1$svr_spearman, 
+                      prediction=rep("SVR", length(filt_svr_his_2_mets_0.1$svr_spearman)))
+
+knn_0.1_his <- data.frame(spearman=filt_knn_his_2_mets_0.1$knn_spearman, 
+                      prediction=rep("KNN", length(filt_knn_his_2_mets_0.1$knn_spearman)))
+
+en_0.1_his <- data.frame(spearman=elnet_his_2_mets_0.1$spearman, 
+                     prediction=rep("EN", length(elnet_his_2_mets_0.1$spearman)))
+den_4_ml_his <- rbind(rf_0.1_his, svr_0.1_his, knn_0.1_his, en_0.1_his)
+
+
+#find the mean of each ML group
+library(plyr)
+mu <- ddply(den_4_ml_his, "prediction", summarise, grp.mean=mean(spearman))
+
+# density plot for all ML in afa 2 mets
+# lwd = line thickness
+ggplot(den_4_ml_his, aes(x = spearman, color=prediction, lwd=1.5)) + 
+  scale_x_continuous(name = "Spearman Correlation > 0.1") + 
+  ggtitle("Density plot of Genes for All Models (HIS 2 METS)") +
+  geom_density()+ theme_classic() +
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=prediction),linetype="longdash", lwd=1) +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#CAU
+
+###############################################################################################################################
+#filter the ML models with CV R2 > 0.01
+library(dplyr)
+library(ggplot2)
+library("ggpubr")
+#CAU
+elnet_cau_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_CAU_2_METS.txt", header = T)
+elnet_cau_2_mets$gene <- as.character(elnet_cau_2_mets$gene)
+
+#RF
+rf_cau <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/CAU_best_grid_rf_all_chrom.txt", header = T)
+rf_cau$Gene_ID <- as.character(rf_cau$Gene_ID)
+rf_cau <- subset(rf_cau, rf_cau$CV_R2 > 0.01)
+for (i in 1:length(rf_cau$Gene_ID)){
+  rf_cau$Gene_ID[i] <- gsub('\\.[0-9]+','',rf_cau$Gene_ID[i])
+} #just to remove the decimal places in the gene_id
+
+
+rf_cau_2_mets <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_CAU_2_METS_rf_cor_test_full_chr.txt", header = T)
+rf_cau_2_mets$gene_id <- as.character(rf_cau_2_mets$gene_id)
+
+filt_rf_cau_2_mets <- inner_join(rf_cau, rf_cau_2_mets, by = c("Gene_ID" = "gene_id")) #filter by CV R2 > 0.01
+filt_rf_cau_2_mets <- filt_rf_cau_2_mets[,c(1,13)]
+names(filt_rf_cau_2_mets) <- c("gene", "rf_spearman")
+
+elnet_cau_2_mets_0.1 <- subset(elnet_cau_2_mets, spearman > 0.1)
+filt_rf_cau_2_mets_0.1 <- subset(filt_rf_cau_2_mets, rf_spearman > 0.1)
+filt_elnet_rf_cau_2_mets_0.1 <- inner_join(elnet_cau_2_mets_0.1, filt_rf_cau_2_mets_0.1, by = c("gene" = "gene"))
+#plot, NOTE all models here are optimized
+ggplot(filt_elnet_rf_cau_2_mets_0.1, aes(x=spearman, y=rf_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (CAU to METS)") + 
+  ylab("Random Forest") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(0,1)) + ylim(c(0,1))
+
+ggscatter(filt_elnet_rf_cau_2_mets_0.1, x = "spearman", y = "rf_spearman", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "Random Forest", title = "Spearman Corr of Observed and Predicted Gene Expression (CAU to METS)",
+          xlim = c(0, 1), ylim = c(0, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+filt_elnet_rf_cau_2_mets <- inner_join(elnet_cau_2_mets, filt_rf_cau_2_mets, by = c("gene" = "gene"))
+sub_elnet_rf_cau_2_mets <- subset(filt_elnet_rf_cau_2_mets, spearman > 0.1 | rf_spearman > 0.1) #removes where both are < 0.1
+#suband_elnet_rf_afa_2_mets <- subset(filt_elnet_rf_afa_2_mets, spearman > 0.1 & rf_spearman > 0.1) # where both are > 0.1
+#Plot
+ggplot(sub_elnet_rf_cau_2_mets, aes(x=spearman, y=rf_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (CAU to METS)") + 
+  ylab("Random Forest") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-0.4,1)) + ylim(c(-0.4,1)) + theme_bw()
+
+#Then find the genes where EN or RF is positive and the other negative 
+#Do FUMA on top 10 of theses genes
+rfpos_cau <- subset(sub_elnet_rf_cau_2_mets, spearman < 0)
+enpos_cau <- subset(sub_elnet_rf_cau_2_mets, rf_spearman < 0)
+
+##########
+#get the genes that are not in the other. rf genes not in en. also en genes not in rf
+#Do FUMA on top 10 of these genes
+rfonly_cau <- anti_join(filt_rf_cau_2_mets_0.1, elnet_cau_2_mets_0.1, by = c("gene" = "gene")) #Better!
+rfonly_den_cau <- data.frame(spearman=rfonly_cau$rf_spearman, prediction=rep("RF Only", length(rfonly_cau$rf_spearman)))
+
+enonly_cau <- anti_join(elnet_cau_2_mets_0.1, filt_rf_cau_2_mets_0.1,by = c("gene" = "gene"))
+enonly_den_cau <- data.frame(spearman=enonly_cau$spearman, prediction=rep("EN Only", length(enonly_cau$spearman)))
+
+
+enplusrf_rf_cau <- data.frame(spearman=filt_elnet_rf_cau_2_mets_0.1$rf_spearman, 
+                              prediction=rep("EN+RF RF Only",length(filt_elnet_rf_cau_2_mets_0.1$rf_spearman)))
+
+enplusrf_en_cau <- data.frame(spearman=filt_elnet_rf_cau_2_mets_0.1$spearman, 
+                              prediction=rep("EN+RF EN Only",length(filt_elnet_rf_cau_2_mets_0.1$spearman)))
+
+
+den_cau_2_mets <- rbind(rfonly_den_cau, enonly_den_cau, enplusrf_rf_cau, enplusrf_en_cau)
+
+#find the name of those genes
+gv18 <- read.table(file = "Z:/data/mesa_models/gencode.v18.annotation.parsed.txt", header = T)
+###########
+#Make bar plot with count of genes in only ML, EN, and EN intersect ML for genes R > 0.1
+gcount <- data.frame(ml=c("Random Forest", "Elastic NET", "Intersect"), no=c(424, 1439, 615)) #rfonly, enonly, 928
+ggplot(data=gcount, aes(x=ml, y=no, fill=ml)) + geom_bar(stat="identity") + ylab("Gene Count") + xlab("Models") +
+  ggtitle("Genes in Models (CAU 2 METS)") + geom_text(aes(label=no), vjust=1.6, color="white", size=3.5)+
+  theme_minimal() # I will see if I can combine svr and knn here
+
+#make density plot
+#find the mean of each ML group
+library(plyr)
+mu <- ddply(den_cau_2_mets, "prediction", summarise, grp.mean=mean(spearman))
+
+#Combine all density plot into one
+# lwd = line thickness
+ggplot(den_cau_2_mets, aes(x = spearman, color=prediction, lwd=1.5)) + 
+  scale_x_continuous(name = "Spearman Correlation > 0.1") + 
+  ggtitle("Density plot of Genes for RF and EN (CAU 2 METS)") +
+  geom_density()+ theme_classic() +
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=prediction),linetype="longdash", lwd=1) +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")
+
+
+# make density plot for EN intersect RF HIS 2 METS
+int_enrf_en_cau <- data.frame(spearman=filt_elnet_rf_cau_2_mets_0.1$spearman, 
+                              prediction=rep("EN",length(filt_elnet_rf_cau_2_mets_0.1$spearman)))
+
+int_enrf_rf_cau <- data.frame(spearman=filt_elnet_rf_cau_2_mets_0.1$rf_spearman, 
+                              prediction=rep("RF",length(filt_elnet_rf_cau_2_mets_0.1$rf_spearman)))
+
+den_int_enrf_cau <- rbind(int_enrf_en_cau, int_enrf_rf_cau)
+#find the mean of each ML group
+library(plyr)
+mu <- ddply(den_int_enrf_cau, "prediction", summarise, grp.mean=mean(spearman))
+
+# lwd = line thickness
+ggplot(den_int_enrf_cau, aes(x = spearman, color=prediction, lwd=1.5)) + 
+  scale_x_continuous(name = "Spearman Correlation > 0.1") + 
+  ggtitle("Density plot of Intersect Genes for RF and EN (CAU 2 METS)") +
+  geom_density()+ theme_classic() +
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=prediction),linetype="longdash", lwd=1) +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")
+
+#SVR
+svr_cau <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/CAU_best_grid_svr_all_chrom.txt", header = T)
+svr_cau$Gene_ID <- as.character(svr_cau$Gene_ID)
+svr_cau <- subset(svr_cau, svr_cau$CV_R2 > 0.01)
+for (i in 1:length(svr_cau$Gene_ID)){
+  svr_cau$Gene_ID[i] <- gsub('\\.[0-9]+','',svr_cau$Gene_ID[i])
+} #just to remove the decimal places in the gene_id
+
+
+svr_cau_2_mets <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_CAU_2_METS_svr_cor_test_full_chr.txt", header = T)
+svr_cau_2_mets$gene_id <- as.character(svr_cau_2_mets$gene_id)
+
+filt_svr_cau_2_mets <- inner_join(svr_cau, svr_cau_2_mets, by = c("Gene_ID" = "gene_id")) #filter by CV R2 > 0.01
+filt_svr_cau_2_mets <- filt_svr_cau_2_mets[,c(1,13)]
+names(filt_svr_cau_2_mets) <- c("gene", "svr_spearman")
+
+elnet_cau_2_mets_0.1 <- subset(elnet_cau_2_mets, spearman > 0.1)
+filt_svr_cau_2_mets_0.1 <- subset(filt_svr_cau_2_mets, svr_spearman > 0.1)
+filt_elnet_svr_cau_2_mets_0.1 <- inner_join(elnet_cau_2_mets_0.1, filt_svr_cau_2_mets_0.1, by = c("gene" = "gene"))
+#plot, NOTE all models here are optimized
+ggplot(filt_elnet_svr_cau_2_mets_0.1, aes(x=spearman, y=svr_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (CAU to METS)") + 
+  ylab("SVR") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(0,1)) + ylim(c(0,1))
+
+ggscatter(filt_elnet_svr_cau_2_mets_0.1, x = "spearman", y = "svr_spearman", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "SVR", title = "Spearman Corr of Observed and Predicted Gene Expression (CAU to METS)",
+          xlim = c(0, 1), ylim = c(0, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+#intersect before filtering off R > 0.1 for each of ML and EN
+filt_elnet_svr_cau_2_mets <- inner_join(elnet_cau_2_mets, filt_svr_cau_2_mets, by = c("gene" = "gene"))
+sub_elnet_svr_cau_2_mets <- subset(filt_elnet_svr_cau_2_mets, spearman > 0.1 | svr_spearman > 0.1) #then filter off where both are < 0.1
+
+#Plot
+ggplot(sub_elnet_svr_cau_2_mets, aes(x=spearman, y=svr_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (CAU to METS)") + 
+  ylab("SVR") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-0.4,1)) + ylim(c(-0.4,1)) + theme_bw()
+#Then find the genes where EN or SVR is positive and the other negative 
+#Do FUMA on top 10 of theses genes
+svrpos_cau <- subset(sub_elnet_svr_cau_2_mets, spearman < 0)
+enpos_s_cau <- subset(sub_elnet_svr_cau_2_mets, svr_spearman < 0)
+
+##########
+#get the genes that are not in the other. svr genes not in en. also en genes not in svr
+#Do FUMA on top 10 of these genes
+svronly_cau <- anti_join(filt_svr_cau_2_mets_0.1, elnet_cau_2_mets_0.1, by = c("gene" = "gene")) #Better!
+
+enonly_s_cau <- anti_join(elnet_cau_2_mets_0.1, filt_svr_cau_2_mets_0.1,by = c("gene" = "gene"))
+
+#find the name of those genes
+gv18 <- read.table(file = "Z:/data/mesa_models/gencode.v18.annotation.parsed.txt", header = T)
+###########
+#Make bar plot with count of genes in only ML, EN, and EN intersect ML for genes R > 0.1
+gcount <- data.frame(ml=c("SVR", "Elastic NET", "Intersect"), no=c(410, 1411, 643)) #rfonly, enonly, 928
+ggplot(data=gcount, aes(x=ml, y=no, fill=ml)) + geom_bar(stat="identity") + ylab("Gene Count") + xlab("Models") +
+  ggtitle("Genes in Models (CAU 2 METS)") + geom_text(aes(label=no), vjust=1.6, color="white", size=3.5)+
+  theme_minimal() # I will see if I can combine rf and knn here
+
+
+#KNN
+knn_cau <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/CAU_best_grid_knn_all_chrom.txt", header = T)
+knn_cau$Gene_ID <- as.character(knn_cau$Gene_ID)
+knn_cau <- subset(knn_cau, knn_cau$CV_R2 > 0.01)
+for (i in 1:length(knn_cau$Gene_ID)){
+  knn_cau$Gene_ID[i] <- gsub('\\.[0-9]+','',knn_cau$Gene_ID[i])
+} #just to remove the decimal places in the gene_id
+
+
+knn_cau_2_mets <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_CAU_2_METS_knn_cor_test_full_chr.txt", header = T)
+knn_cau_2_mets$gene_id <- as.character(knn_cau_2_mets$gene_id)
+
+filt_knn_cau_2_mets <- inner_join(knn_cau, knn_cau_2_mets, by = c("Gene_ID" = "gene_id")) #filter by CV R2 > 0.01
+filt_knn_cau_2_mets <- filt_knn_cau_2_mets[,c(1,13)]
+names(filt_knn_cau_2_mets) <- c("gene", "knn_spearman")
+
+elnet_cau_2_mets_0.1 <- subset(elnet_cau_2_mets, spearman > 0.1)
+filt_knn_cau_2_mets_0.1 <- subset(filt_knn_cau_2_mets, knn_spearman > 0.1)
+filt_elnet_knn_cau_2_mets_0.1 <- inner_join(elnet_cau_2_mets_0.1, filt_knn_cau_2_mets_0.1, by = c("gene" = "gene"))
+#plot Intersect where both ML R > 0.1, NOTE all models here are optimized
+ggplot(filt_elnet_knn_cau_2_mets_0.1, aes(x=spearman, y=knn_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (CAU to METS)") + 
+  ylab("KNN") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(0,1)) + ylim(c(0,1))
+
+ggscatter(filt_elnet_knn_cau_2_mets_0.1, x = "spearman", y = "knn_spearman", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "KNN", title = "Spearman Corr of Observed and Predicted Gene Expression (CAU to METS)",
+          xlim = c(0, 1), ylim = c(0, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
+
+#intersect before filtering off R > 0.1 for each of ML and EN
+filt_elnet_knn_cau_2_mets <- inner_join(elnet_cau_2_mets, filt_knn_cau_2_mets, by = c("gene" = "gene"))
+sub_elnet_knn_cau_2_mets <- subset(filt_elnet_knn_cau_2_mets, spearman > 0.1 | knn_spearman > 0.1) #then filter off where both are < 0.1
+
+#Plot
+ggplot(sub_elnet_knn_cau_2_mets, aes(x=spearman, y=knn_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (CAU to METS)") + 
+  ylab("KNN") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-0.5,1)) + ylim(c(-0.5,1)) + theme_bw()
+#Then find the genes where EN or KNN is positive and the other negative 
+#Do FUMA on top 10 of theses genes
+knnpos_cau <- subset(sub_elnet_knn_cau_2_mets, spearman < 0)
+enpos_k_cau <- subset(sub_elnet_knn_cau_2_mets, knn_spearman < 0)
+
+##########
+#get the genes that are not in the other. svr genes not in en. also en genes not in svr
+#Do FUMA on top 10 of these genes
+knnonly_cau <- anti_join(filt_knn_cau_2_mets_0.1, elnet_cau_2_mets_0.1, by = c("gene" = "gene")) #Better!
+
+enonly_k_cau <- anti_join(elnet_cau_2_mets_0.1, filt_knn_cau_2_mets_0.1,by = c("gene" = "gene"))
+
+#find the name of those genes
+gv18 <- read.table(file = "Z:/data/mesa_models/gencode.v18.annotation.parsed.txt", header = T)
+###########
+#Make bar plot with count of genes in only ML, EN, and EN intersect ML for genes R > 0.1
+gcount <- data.frame(ml=c("KNN", "Elastic NET", "Intersect"), no=c(303, 1612, 442)) #rfonly, enonly, 928
+ggplot(data=gcount, aes(x=ml, y=no, fill=ml)) + geom_bar(stat="identity") + ylab("Gene Count") + xlab("Models") +
+  ggtitle("Genes in Models (CAU 2 METS)") + geom_text(aes(label=no), vjust=1.6, color="white", size=3.5)+
+  theme_minimal() # I will see if I can combine rf and knn here
+
+#Make bar plot with count of genes in only ML, EN+ML, and EN for genes R > 0.1
+gcount <- data.frame(ml=c("EN-RF", "EN+RF", "RF-EN", "EN-SVR", "EN+SVR", "SVR-EN",
+                          "EN-KNN", "EN+KNN", "KNN-EN"), no=c(1439,615,424,1411,643,410,1612,442,303)) #rfonly, enonly, 928
+ggplot(data=gcount, aes(x=ml, y=no, fill=ml)) + geom_bar(stat="identity") + ylab("Gene Count") + xlab("Models") +
+  ggtitle("Genes in Models (CAU 2 METS)") + geom_text(aes(label=no), vjust=1.6, color="white", size=3.5)+
+  theme_minimal() # I will see if I can combine rf and knn here
+
+#Make violin plot for all 3 population mesa to mets with EN
+elnet_afa_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_AFA_2_METS.txt", header = T)
+elnet_afa_2_mets$gene <- as.character(elnet_afa_2_mets$gene)
+en_afa_2mets <- data.frame(spearman=elnet_afa_2_mets_0.1$spearman, prediction=rep("AFA_2_METS", length(elnet_afa_2_mets_0.1$spearman)))
+
+elnet_his_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_HIS_2_METS.txt", header = T)
+elnet_his_2_mets$gene <- as.character(elnet_his_2_mets$gene)
+elnet_his_2_mets_0.1 <- subset(elnet_his_2_mets, spearman > 0.1)
+en_his_2mets <- data.frame(spearman=elnet_his_2_mets_0.1$spearman, prediction=rep("HIS_2_METS", length(elnet_his_2_mets_0.1$spearman)))
+
+elnet_cau_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_CAU_2_METS.txt", header = T)
+elnet_cau_2_mets$gene <- as.character(elnet_cau_2_mets$gene)
+elnet_cau_2_mets_0.1 <- subset(elnet_cau_2_mets, spearman > 0.1)
+en_cau_2mets <- data.frame(spearman=elnet_cau_2_mets_0.1$spearman, prediction=rep("CAU_2_METS", length(elnet_cau_2_mets_0.1$spearman)))
+
+en_mesa_2_mets <- rbind(en_afa_2mets, en_his_2mets, en_cau_2mets)
+# Function to produce summary statistics (mean and +/- sd)
+data_summary <- function(x) {
+  m <- mean(x)
+  ymin <- m-sd(x)
+  ymax <- m+sd(x)
+  return(c(y=m,ymin=ymin,ymax=ymax))
+}
+
+library(Hmisc)
+ggplot(en_mesa_2_mets, aes(x=prediction, y=spearman, color=prediction, fill=prediction, ylim(0,1))) + 
+  geom_violin(trim = F) + geom_boxplot(width=0.2, color="black") + theme_minimal() + 
+  ggtitle("Elastic Net (MESA to METS)") #+
+#stat_summary(fun.y=mean, geom = "point", size=3, color="white")
+
+#Make density plot for all 4 ML models with ML R > 0.1 CAU 2 METS
+rf_0.1_cau <- data.frame(spearman=filt_rf_cau_2_mets_0.1$rf_spearman, 
+                         prediction=rep("RF", length(filt_rf_cau_2_mets_0.1$rf_spearman)))
+
+svr_0.1_cau <- data.frame(spearman=filt_svr_cau_2_mets_0.1$svr_spearman, 
+                          prediction=rep("SVR", length(filt_svr_cau_2_mets_0.1$svr_spearman)))
+
+knn_0.1_cau <- data.frame(spearman=filt_knn_cau_2_mets_0.1$knn_spearman, 
+                          prediction=rep("KNN", length(filt_knn_cau_2_mets_0.1$knn_spearman)))
+
+en_0.1_cau <- data.frame(spearman=elnet_cau_2_mets_0.1$spearman, 
+                         prediction=rep("EN", length(elnet_cau_2_mets_0.1$spearman)))
+den_4_ml_cau <- rbind(rf_0.1_cau, svr_0.1_cau, knn_0.1_cau, en_0.1_cau)
+
+
+#find the mean of each ML group
+library(plyr)
+mu <- ddply(den_4_ml_cau, "prediction", summarise, grp.mean=mean(spearman))
+
+# density plot for all ML in afa 2 mets
+# lwd = line thickness
+ggplot(den_4_ml_cau, aes(x = spearman, color=prediction, lwd=1.5)) + 
+  scale_x_continuous(name = "Spearman Correlation > 0.1") + 
+  ggtitle("Density plot of Genes for All Models (CAU 2 METS)") +
+  geom_density()+ theme_classic() +
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=prediction),linetype="longdash", lwd=1) +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")
+
+
+
+
+
+
+
+
+
+
+
+#Make violin plot for all 3 population mesa to mets with RF
+rf_afa_2mets <- data.frame(spearman=filt_rf_afa_2_mets_0.1$rf_spearman, 
+                           prediction=rep("AFA_2_METS", length(filt_rf_afa_2_mets_0.1$rf_spearman)))
+
+rf_his_2mets <- data.frame(spearman=filt_rf_his_2_mets_0.1$rf_spearman, 
+                           prediction=rep("HIS_2_METS", length(filt_rf_his_2_mets_0.1$rf_spearman)))
+
+rf_cau_2mets <- data.frame(spearman=filt_rf_cau_2_mets_0.1$rf_spearman, 
+                           prediction=rep("CAU_2_METS", length(filt_rf_cau_2_mets_0.1$rf_spearman)))
+
+rf_mesa_2_mets <- rbind(rf_afa_2mets, rf_his_2mets, rf_cau_2mets)
+
+ggplot(rf_mesa_2_mets, aes(x=prediction, y=spearman, color=prediction, fill=prediction)) + 
+  geom_violin(trim=T) + geom_boxplot(width=0.2, color="black") +
+  stat_summary(fun.y=mean, geom = "point", size=3, color="white") + theme_linedraw(20) +
+  scale_y_continuous(breaks=seq(0.0, 1.0, 0.2), limits=c(0, 1.0))
+
+
+
+#Make violin plot for all 3 population mesa to mets with SVR
+svr_afa_2mets <- data.frame(spearman=filt_svr_afa_2_mets_0.1$svr_spearman, 
+                           prediction=rep("AFA_2_METS", length(filt_svr_afa_2_mets_0.1$svr_spearman)))
+
+svr_his_2mets <- data.frame(spearman=filt_svr_his_2_mets_0.1$svr_spearman, 
+                           prediction=rep("HIS_2_METS", length(filt_svr_his_2_mets_0.1$svr_spearman)))
+
+svr_cau_2mets <- data.frame(spearman=filt_svr_cau_2_mets_0.1$svr_spearman, 
+                           prediction=rep("CAU_2_METS", length(filt_svr_cau_2_mets_0.1$svr_spearman)))
+
+svr_mesa_2_mets <- rbind(svr_afa_2mets, svr_his_2mets, svr_cau_2mets)
+
+ggplot(svr_mesa_2_mets, aes(x=prediction, y=spearman, color=prediction, fill=prediction, ylim(0,1))) + 
+  geom_violin(trim=F) + geom_boxplot(width=0.2, color="black") + theme_minimal() + 
+  ggtitle("SVR (MESA to METS)") + stat_summary(fun.y=mean, geom = "point", size=3, color="white")
+
+
+
+
+#Make violin plot for all 3 population mesa to mets with KNN
+knn_afa_2mets <- data.frame(spearman=filt_knn_afa_2_mets_0.1$knn_spearman, 
+                            prediction=rep("AFA_2_METS", length(filt_knn_afa_2_mets_0.1$knn_spearman)))
+
+knn_his_2mets <- data.frame(spearman=filt_knn_his_2_mets_0.1$knn_spearman, 
+                            prediction=rep("HIS_2_METS", length(filt_knn_his_2_mets_0.1$knn_spearman)))
+
+knn_cau_2mets <- data.frame(spearman=filt_knn_cau_2_mets_0.1$knn_spearman, 
+                            prediction=rep("CAU_2_METS", length(filt_knn_cau_2_mets_0.1$knn_spearman)))
+
+knn_mesa_2_mets <- rbind(knn_afa_2mets, knn_his_2mets, knn_cau_2mets)
+
+ggplot(knn_mesa_2_mets, aes(x=prediction, y=spearman, color=prediction, fill=prediction, ylim(0,1))) + 
+  geom_violin(trim=F) + geom_boxplot(width=0.2, color="black") + theme_minimal() + 
+  ggtitle("KNN (MESA to METS)") + stat_summary(fun.y=mean, geom = "point", size=3, color="white")
+
+
+#Gene Annotation. use it to find names of genes for FUMA
+gv18 <- read.table(file = "Z:/data/mesa_models/gencode.v18.annotation.parsed.txt", header = T)
+gv18$gene_id <- as.character(gv18$gene_id)
+gv18_intact <- gv18
+for (i in 1:length(gv18$gene_id)){
+  gv18$gene_id[i] <- gsub('\\.[0-9]+','',gv18$gene_id[i])
+} #just to remove the decimal places in the gene_id
+
+#Find genes where RF is positive and EN is negative across population
+fuma_rf_pos <- rfpos[,c(1,3)]
+fuma_rf_pos_his <- rfpos_his[,c(1,3)]
+fuma_rf_pos_cau <-rfpos_cau[,c(1,3)]
+#find there intersects
+fuma_rf_afa_his <- inner_join(fuma_rf_pos, fuma_rf_pos_his, by = c("gene" = "gene")) # AFA and HIS
+fuma_rf_afa_cau <- inner_join(fuma_rf_pos, fuma_rf_pos_cau, by = c("gene" = "gene")) # AFA and CAU
+fuma_rf_his_cau <- inner_join(fuma_rf_pos_his, fuma_rf_pos_cau, by = c("gene" = "gene")) # HIS and CAU
+
+#intersect all three pop
+fuma_rf <- inner_join(fuma_rf_pos, fuma_rf_pos_his, by = c("gene" = "gene"))
+fuma_rf <- inner_join(fuma_rf, fuma_rf_pos_cau, by = c("gene" = "gene"))
+
+
+#Find genes with R > 0.1 found in RF and not in EN across population
+fuma_rfonly <- rfonly
+fuma_rfonly_his <- rfonly_his
+fuma_rfonly_cau <- rfonly_cau
+#find there intersects
+fuma_rfonly_afa_his <- inner_join(fuma_rfonly, fuma_rfonly_his, by = c("gene"="gene")) # AFA and HIS
+fuma_rfonly_afa_cau <- inner_join(fuma_rfonly, fuma_rfonly_cau, by = c("gene"="gene")) # AFA and CAU
+fuma_rfonly_his_cau <- inner_join(fuma_rfonly_his, fuma_rfonly_cau, by = c("gene"="gene")) #HIS and CAU
+
+#intersect for all three pop
+fuma_only_rf <- inner_join(fuma_rfonly, fuma_rfonly_his, by = c("gene" = "gene"))
+fuma_only_rf <- inner_join(fuma_only_rf, fuma_rfonly_cau, by = c("gene" = "gene")) #all three pop
+
+fuma_gcode <- inner_join(fuma_only_rf, gv18, by = c("gene"="gene_id"))
