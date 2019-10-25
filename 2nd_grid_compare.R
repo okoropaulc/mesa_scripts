@@ -1497,7 +1497,7 @@ enplusrf_en <- data.frame(spearman=filt_elnet_rf_afa_2_mets_0.1$spearman,
 
 
 den_afa_2_mets <- rbind(rfonly_den, enonly_den, enplusrf_rf, enplusrf_en)
-
+#rbind(rfonly_den, enonly_den, enplusrf_rf, enplusrf_en)
 enonly_e <- anti_join(enonly,filt_elnet_rf_afa_2_mets_0.1,by = c("gene" = "gene"))
 #find the name of those genes
 gv18 <- read.table(file = "Z:/data/mesa_models/gencode.v18.annotation.parsed.txt", header = T)
@@ -1545,9 +1545,10 @@ ggplot(den_afa_2_mets, aes(x = spearman, color=prediction, lwd=1.5)) +
   scale_x_continuous(name = "Spearman Correlation > 0.1") +
   geom_density()+ theme_classic(20) +
   geom_vline(data=mu, aes(xintercept=grp.mean, color=prediction),linetype="longdash", lwd=1) +
-  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed") + 
-  scale_color_manual(values = c("red","blue","orange","violet"))
-
+  scale_color_manual(values = c("red","blue","orange","violet")) #+
+  #geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")
+  
+breaks=c("EN+RF EN Only", "EN+RF RF Only","EN Only", "RF Only")
 
 # make density plot for EN intersect RF AFA 2 METS
 int_enrf_en <- data.frame(spearman=filt_elnet_rf_afa_2_mets_0.1$spearman, 
@@ -1566,8 +1567,8 @@ ggplot(den_int_enrf, aes(x = spearman, color=prediction, lwd=1.5)) +
   scale_x_continuous(name = "Spearman Correlation > 0.1") + 
   ggtitle("Density plot of Intersect Genes for RF and EN (AFA 2 METS)") +
   geom_density()+ theme_classic() +
-  geom_vline(data=mu, aes(xintercept=grp.mean, color=prediction),linetype="longdash", lwd=1) +
-  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=prediction),linetype="longdash", lwd=1) #+
+  #geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")
 
 #SVR
 svr_afa <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/best_grid_svr_all_chrom.txt", header = T)
@@ -1727,26 +1728,26 @@ ggplot(en_mesa_2_mets, aes(x=prediction, y=spearman, color=prediction,
 elnet_afa_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_AFA_2_METS.txt", header = T)
 elnet_afa_2_mets$gene <- as.character(elnet_afa_2_mets$gene)
 en_afa_2mets <- data.frame(spearman=elnet_afa_2_mets$spearman, 
-                           prediction=rep("AFA_2_METS", length(elnet_afa_2_mets$spearman)))
+                           prediction=rep("AFA", length(elnet_afa_2_mets$spearman)))
 
 elnet_his_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_HIS_2_METS.txt", header = T)
 elnet_his_2_mets$gene <- as.character(elnet_his_2_mets$gene)
 en_his_2mets <- data.frame(spearman=elnet_his_2_mets$spearman, 
-                           prediction=rep("HIS_2_METS", length(elnet_his_2_mets$spearman)))
+                           prediction=rep("HIS", length(elnet_his_2_mets$spearman)))
 
 elnet_cau_2_mets <- read.table(file = "Z:/data/mesa_models/spearman_CAU_2_METS.txt", header = T)
 elnet_cau_2_mets$gene <- as.character(elnet_cau_2_mets$gene)
 en_cau_2mets <- data.frame(spearman=elnet_cau_2_mets$spearman, 
-                           prediction=rep("CAU_2_METS", length(elnet_cau_2_mets$spearman)))
+                           prediction=rep("CAU", length(elnet_cau_2_mets$spearman)))
 
 en_mesa_2_mets <- rbind(en_afa_2mets, en_his_2mets, en_cau_2mets)
 # Function to produce summary statistics (mean and +/- sd)
 
 ggplot(en_mesa_2_mets, aes(x=prediction, y=spearman, color=prediction, fill=prediction)) + 
-  geom_violin(trim = F) + geom_boxplot(width=0.2, color="black") + theme_minimal() + 
-  ggtitle("Elastic Net (MESA to METS)") +
-  stat_summary(fun.y=mean, geom = "point", size=3, color="white") + theme_linedraw() +
-  scale_y_continuous(breaks=seq(0.0, 1.0, 0.2), limits=c(0, 1.0))
+  geom_violin(trim=F, alpha=0.6) + geom_boxplot(width=0.2, color="black", lwd=1.2) +
+  stat_summary(fun.y=mean, geom = "point", size=3, color="white") + theme_linedraw(20) +
+  scale_y_continuous(breaks=seq(-1.0, 1.0, 0.2), limits=c(-1.0, 1.0)) +
+  theme(panel.grid.minor = element_blank()) + xlab("Elastic Net")
 
 
 
@@ -1901,8 +1902,8 @@ ggplot(den_int_enrf_his, aes(x = spearman, color=prediction, lwd=1.5)) +
   scale_x_continuous(name = "Spearman Correlation > 0.1") + 
   ggtitle("Density plot of Intersect Genes for RF and EN (HIS 2 METS)") +
   geom_density()+ theme_classic() +
-  geom_vline(data=mu, aes(xintercept=grp.mean, color=prediction),linetype="longdash", lwd=1) +
-  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=prediction),linetype="longdash", lwd=1) #+
+  #geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")
 
 #SVR
 svr_his <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/HIS_best_grid_svr_all_chrom.txt", header = T)
@@ -2439,6 +2440,26 @@ ggplot(rf_mesa_2_mets, aes(x=prediction, y=spearman, color=prediction, fill=pred
 
 
 
+#Make violin plot for all 3 population mesa to mets with RF without filtering R > 0.1
+rf_afa_2mets <- data.frame(spearman=filt_rf_afa_2_mets$rf_spearman, 
+                           prediction=rep("AFA", length(filt_rf_afa_2_mets$rf_spearman)))
+
+rf_his_2mets <- data.frame(spearman=filt_rf_his_2_mets$rf_spearman, 
+                           prediction=rep("HIS", length(filt_rf_his_2_mets$rf_spearman)))
+
+rf_cau_2mets <- data.frame(spearman=filt_rf_cau_2_mets$rf_spearman, 
+                           prediction=rep("CAU", length(filt_rf_cau_2_mets$rf_spearman)))
+
+rf_mesa_2_mets <- rbind(rf_afa_2mets, rf_his_2mets, rf_cau_2mets)
+
+ggplot(rf_mesa_2_mets, aes(x=prediction, y=spearman, color=prediction, fill=prediction)) + 
+  geom_violin(trim =F, alpha=0.6) + geom_boxplot(width=0.2, color="black", lwd=1.2) +
+  stat_summary(fun.y=mean, geom = "point", size=3, color="white") + theme_linedraw(20)+
+  scale_y_continuous(breaks=seq(-1.0, 1.0, 0.20), limits=c(-1.0, 1.0)) +
+  theme(panel.grid.minor = element_blank()) + xlab("Random Forest")
+  
+
+
 #Make violin plot for all 3 population mesa to mets with SVR
 svr_afa_2mets <- data.frame(spearman=filt_svr_afa_2_mets_0.1$svr_spearman, 
                            prediction=rep("AFA_2_METS", length(filt_svr_afa_2_mets_0.1$svr_spearman)))
@@ -2511,3 +2532,4 @@ fuma_only_rf <- inner_join(fuma_rfonly, fuma_rfonly_his, by = c("gene" = "gene")
 fuma_only_rf <- inner_join(fuma_only_rf, fuma_rfonly_cau, by = c("gene" = "gene")) #all three pop
 
 fuma_gcode <- inner_join(fuma_only_rf, gv18, by = c("gene"="gene_id"))
+
