@@ -834,6 +834,100 @@ p = ggplot(rftrees) +
 print(p)
 
 
+
+
+
+#Merge all the RF tree params for 5000 tree
+"%&%" <- function(a,b) paste(a,b, sep = "")
+
+prf1 <- NULL
+
+for (chrom in 1:22) {
+  no <- as.character(chrom)
+  for (chunk in 1:5) {
+    prf1 <- rbind(prf1, read.table(file = "Z:/data/mesa_models/python_ml_models/results/AFA_rf_5000tree_check_cv_chr" %&% no %&% "_chunk" %&% chunk %&% ".txt", header = T, sep = "\t"))
+  }
+}
+
+write.table(prf1, file = "Z:/data/mesa_models/python_ml_models/results/AFA_rf_5000tree_check_cv_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+
+
+
+
+#Merge all the RF tree params for 5 tree
+"%&%" <- function(a,b) paste(a,b, sep = "")
+
+prf_5t <- NULL
+
+for (chrom in 1:22) {
+  no <- as.character(chrom)
+  prf_5t <- rbind(prf_5t, read.table(file = "Z:/data/mesa_models/python_ml_models/results/AFA_rf_tree_check_cv_chr" %&% no %&% ".txt", header = T, sep = "\t"))
+}
+write.table(prf_5t, file = "Z:/data/mesa_models/python_ml_models/results/AFA_rf_tree_check_cv_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+
+
+
+#compare the performance of CV R2 of 5, 50, 500, 5000 trees
+
+t50_500 <- prf[,c(1,4,13)] #take out trees50 and 500 only
+names(t50_500) <- c('gene', '50', '500')
+
+t5 <- prf_5t[,c(1,3)]
+names(t5) <- c('gene', '5')
+
+t5 <- subset(t5, t5$`5` > -1)
+
+t50 <- t50_500[,c(1,2)]
+t50 <- subset(t50, t50$`50` > -1)
+
+t500 <- t50_500[,c(1,3)]
+t500$gene <- as.character(t500$gene)
+t500 <- subset(t500, t500$`500` > -1)
+
+t5000 <- prf1[,c(1,3)]
+names(t5000) <- c('gene', '5000')
+t5000$gene <- as.character(t5000$gene)
+t5000 <- subset(t5000, t5000$`5000` > -1)
+
+
+library(dplyr)
+
+t5h_5k <- inner_join(t500, t5000, by = c("gene" = "gene"))
+t5h_5k <- t5h_5k[,c(2,3)]
+names(t5h_5k) <- c("five", "five_hundred")
+
+library(ggpubr)
+ggscatter(t5h_5k, x = "five", y = "five_hundred", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "5000 trees", ylab = "500 trees",
+          xlim = c(0, 1), ylim = c(0, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")+
+          theme_classic2(20) + ggtitle("500 vs 5000 RF trees")
+
+
+ggplot(t5h_5k, aes(x=five, y=five_hundred)) + ggtitle("500 tree vs 5000 tree") + 
+  ylab("500 tree") + xlab("5000 tree") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-1,1)) + ylim(c(-1,1))
+
+#make violin plot with all the trees
+#make the tables
+tree5 <- data.frame(CV_R2=t5$`5`, tree=rep("5", length(t5$gene)))
+tree50 <- data.frame(CV_R2=t50$`50`, tree=rep("50", length(t50$gene)))
+tree500 <- data.frame(CV_R2=t500$`500`, tree=rep("500", length(t500$gene)))
+tree5000 <- data.frame(CV_R2=t5000$`5000`, tree=rep("5000", length(t5000$gene)))
+
+rf_tree <- rbind(tree5, tree50, tree500, tree5000)
+
+#plot the violin
+
+library(ggplot2)
+
+ggplot(rf_tree, aes(x=tree, y=CV_R2, color=tree, fill=tree)) + 
+  geom_violin(trim=F) + geom_boxplot(width=0.2, color="black") +
+  ggtitle("Random Forest Trees Performance")
+
+ggplot(rf_tree, aes(x=tree, y=CV_R2, color=tree, fill=tree)) + 
+  geom_line()
+
 ####################################################################################################
 #Plot 5, 50 500 trees
 
@@ -1150,7 +1244,7 @@ rf$gene_id <- as.character(rf$gene_id)
 
 
 
-cau6_2 <- read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/CAU_best_grid_split_rf_cv_chr6_chunk2.txt", header = T)
+afhi6_2 <- read.table(file = "Z:/data/mesa_models/python_ml_models/AFHI_results/grid_split/AFHI_best_grid_split_rf_cv_chr6_chunk2.txt", header = T)
 
 
 
