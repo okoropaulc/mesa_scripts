@@ -316,12 +316,12 @@ for (chrom in 1:22) {
 }
 
 #Just write out the model_summaries
-write.table(model_summaries, file = "/home/paul/mesa_models/split_mesa/results/all_chr_AFA_model_summaries.txt", row.names = FALSE)
+write.table(model_summaries, file = "Z:/data/mesa_models/split_mesa/results/all_chr_AFA_model_summaries.txt", row.names = FALSE)
 
 #filter model summaries by cv R2
 model_summaries <- subset(model_summaries, model_summaries$cv_R2_avg > 0.5)
 
-mesa_all <- read.table(file = "/home/paul/mesa_models/split_mesa/results/all_chr_AFA_model_summaries.txt", header = TRUE)
+mesa_all <- read.table(file = "Z:/data/mesa_models/split_mesa/results/all_chr_AFA_model_summaries.txt", header = TRUE)
 
 hist(mesa_all$cv_R2_avg, breaks = "FD", xlim = c(-1, 1), freq = T, xlab = "CV R2", col = "green", main = "MESA AFA All Chromosomes Models Performances")
 

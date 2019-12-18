@@ -1268,11 +1268,11 @@ pop <- "CAU"
 #first check what each chunk file looks like
 # by the date 1 october 2019 9:57AM it is remaining 12 genes in chr 6 chunk 2 ie 82/104
 
-chk1rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/CAU_best_grid_split_rf_cv_chr1_chunk1.txt", header=T)
-chk2rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/CAU_best_grid_split_rf_cv_chr1_chunk2.txt", header=T)
-chk3rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/CAU_best_grid_split_rf_cv_chr1_chunk3.txt", header=T)
-chk4rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/CAU_best_grid_split_rf_cv_chr1_chunk4.txt", header=T)
-chk5rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/CAU_best_grid_split_rf_cv_chr1_chunk5.txt", header=T)
+chk1rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/CAU_best_grid_split_rf_cv_chr6_chunk1.txt", header=T)
+chk2rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/CAU_best_grid_split_rf_cv_chr6_chunk2.txt", header=T)
+chk3rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/CAU_best_grid_split_rf_cv_chr6_chunk3.txt", header=T)
+chk4rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/CAU_best_grid_split_rf_cv_chr6_chunk4.txt", header=T)
+chk5rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/cau_results/grid_split/CAU_best_grid_split_rf_cv_chr6_chunk5.txt", header=T)
 
 allchk1 <- rbind(chk1rf, chk2rf, chk3rf, chk4rf, chk5rf)
 
@@ -1288,6 +1288,8 @@ for (alg in algs){
 
 bgrid_cau_chr1_rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/CAU_best_grid_rf_chr1_full.txt", header = T)
 bgrid_cau_chr1_rf <- bgrid_his_chr1_rf[unique(bgrid_his_chr1_rf$Gene_Name),]
+bgrid_cau_chr6_rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/CAU_best_grid_rf_chr6_full.txt", header = T)
+
 
 #This is the correct way I Should do merge all the chunks and the chromosomes into one single large file
 for (alg in algs){
@@ -1311,9 +1313,9 @@ bgrid_his_knn <- bgrid_his_knn[unique(bgrid_his_knn$Gene_Name),]
 for (alg in algs){
   allchr <- NULL
   for (no in 1:22){
-    allchr <- rbind(allchr, read.table(file="Z:/data/mesa_models/python_ml_models/merged_chunk_results/HIS_best_grid_"%&% alg %&% "_chr" %&% no %&% "_full.txt", header = T, sep = "\t", stringsAsFactors = F))
+    allchr <- rbind(allchr, read.table(file="Z:/data/mesa_models/python_ml_models/merged_chunk_results/CAU_best_grid_"%&% alg %&% "_chr" %&% no %&% "_full.txt", header = T, sep = "\t", stringsAsFactors = F))
   }
-}
+} #But this is not necessary anymore cause the loop above does the same job
 
 ################################################################################################################################
 # Merge CAU 2 METS
@@ -1336,6 +1338,99 @@ for (chrom in 1:22) {
 write.table(knn, file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_knn_cor_test_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
 write.table(rf, file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_rf_cor_test_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
 write.table(svr, file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_svr_cor_test_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+
+
+
+
+
+
+
+##############################################################################################################################
+# Merge AFHI best grids
+
+"%&%" <- function(a,b) paste(a,b, sep = "")
+
+
+#Merging all the chunks that were complete
+algs <- c("rf", "svr", "knn")
+pop <- "AFHI"
+
+#use this to merge all chunks into their singular chromosomes
+#first check what each chunk file looks like
+
+chk1rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/AFHI_results/grid_split/AFHI_best_grid_split_rf_cv_chr6_chunk1.txt", header=T)
+chk2rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/AFHI_results/grid_split/AFHI_best_grid_split_rf_cv_chr6_chunk2.txt", header=T)
+chk3rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/AFHI_results/grid_split/AFHI_best_grid_split_rf_cv_chr6_chunk3.txt", header=T)
+chk4rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/AFHI_results/grid_split/AFHI_best_grid_split_rf_cv_chr6_chunk4.txt", header=T)
+chk5rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/AFHI_results/grid_split/AFHI_best_grid_split_rf_cv_chr6_chunk5.txt", header=T)
+
+allchk1 <- rbind(chk1rf, chk2rf, chk3rf, chk4rf, chk5rf)
+
+for (alg in algs){
+  for (no in 1:22){
+    allchk <- NULL
+    for (k in 1:5){
+      allchk <- rbind(allchk, read.table(file = "Z:/data/mesa_models/python_ml_models/AFHI_results/grid_split/" %&% pop %&% "_best_grid_split_"%&% alg %&% "_cv_chr" %&% no %&% "_chunk" %&% k %&% ".txt", header = T, sep = "\t", stringsAsFactors = F))
+    }
+    write.table(allchk, file="Z:/data/mesa_models/python_ml_models/merged_chunk_results/" %&% pop %&% "_best_grid_"%&% alg %&% "_chr" %&% no %&% "_full.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+  }
+}
+
+bgrid_cau_chr1_rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/AFHI_best_grid_rf_chr1_full.txt", header = T)
+bgrid_cau_chr1_rf <- bgrid_his_chr1_rf[unique(bgrid_his_chr1_rf$Gene_Name),]
+bgrid_cau_chr6_rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/AFHI_best_grid_rf_chr6_full.txt", header = T)
+
+
+#This is the correct way I Should do merge all the chunks and the chromosomes into one single large file
+for (alg in algs){
+  allchr <- NULL
+  for (no in 1:22){
+    #allchr <- NULL
+    for (k in 1:5){
+      allchr <- rbind(allchr, read.table(file = "Z:/data/mesa_models/python_ml_models/AFHI_results/grid_split/" %&% pop %&% "_best_grid_split_"%&% alg %&% "_cv_chr"%&% no %&% "_chunk" %&% k %&% ".txt", header = T, sep = "\t", stringsAsFactors = F))
+    }
+  }
+  write.table(allchr, file="Z:/data/mesa_models/python_ml_models/merged_chunk_results/" %&% pop %&% "_best_grid_"%&% alg %&% "_all_chrom.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+}
+
+bgrid_cau_rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/AFHI_best_grid_rf_all_chrom.txt", header = T)
+bgrid_cau_knn <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/AFHI_best_grid_knn_all_chrom.txt", header = T)
+bgrid_cau_svr <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/AFHI_best_grid_svr_all_chrom.txt", header = T)
+
+bgrid_his_knn <- bgrid_his_knn[unique(bgrid_his_knn$Gene_Name),]
+
+
+
+################################################################################################################################
+# Merge AFHI 2 METS
+
+"%&%" <- function(a,b) paste(a,b, sep = "")
+
+knn <- NULL
+rf <- NULL
+svr <- NULL
+pop <- "AFHI"
+
+for (chrom in 1:22) {
+  no <- as.character(chrom)
+  knn <- rbind(knn, read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_knn_cor_test_chr" %&% chrom %&% ".txt", header = T, stringsAsFactors = F, sep = "\t"))
+  rf <- rbind(rf, read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_rf_cor_test_chr" %&% chrom %&% ".txt", header = T, stringsAsFactors = F, sep = "\t"))
+  svr <- rbind(svr, read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_svr_cor_test_chr" %&% chrom %&% ".txt", header = T, stringsAsFactors = F, sep = "\t"))
+}
+
+#write out the merged full chromosomes
+write.table(knn, file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_knn_cor_test_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+write.table(rf, file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_rf_cor_test_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+write.table(svr, file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_svr_cor_test_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+
+
+
+
+
+
+
+##############################################################################################################################
+
 
 
 #############################################################################################################################
@@ -2279,7 +2374,9 @@ den_cau_2_mets <- rbind(rfonly_den_cau, enonly_den_cau, enplusrf_rf_cau, enplusr
 gv18 <- read.table(file = "Z:/data/mesa_models/gencode.v18.annotation.parsed.txt", header = T)
 ###########
 #Make bar plot with count of genes in only ML, EN, and EN intersect ML for genes R > 0.1
-gcount <- data.frame(ml=c("Random Forest", "Elastic NET", "Intersect"), no=c(424, 1439, 615)) #rfonly, enonly, 928
+gcount <- data.frame(ml=c("Random Forest", "Elastic NET", "Intersect"), 
+                     no=c(length(rfonly_cau$gene), length(enonly_cau$gene), 
+                          length(filt_elnet_rf_cau_2_mets_0.1$gene))) #rfonly, enonly, 928
 ggplot(data=gcount, aes(x=ml, y=no, fill=ml)) + geom_bar(stat="identity") + ylab("Gene Count") + xlab("Models") +
   ggtitle("Genes in Models (CAU 2 METS)") + geom_text(aes(label=no), vjust=1.6, color="white", size=3.5)+
   theme_minimal() # I will see if I can combine svr and knn here
@@ -2627,3 +2724,186 @@ fuma_only_rf <- inner_join(fuma_only_rf, fuma_rfonly_cau, by = c("gene" = "gene"
 
 fuma_gcode <- inner_join(fuma_only_rf, gv18, by = c("gene"="gene_id"))
 
+
+
+
+
+
+
+
+
+#filter the ML models with CV R2 > 0.01
+library(dplyr)
+library(ggplot2)
+library("ggpubr")
+#AFHI
+
+elnet_afhi_2_mets <- read.table(file = "Z:/data/mesa_models/AFHI_spearman_corr.txt", header = T)
+elnet_afhi_2_mets$gene <- as.character(elnet_afhi_2_mets$gene)
+elnet_afhi_2_mets <- elnet_afhi_2_mets[,c(1,2)]
+
+#RF
+rf_afhi <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/AFHI_best_grid_rf_all_chrom.txt", header = T)
+rf_afhi$Gene_ID <- as.character(rf_afhi$Gene_ID)
+rf_afhi <- subset(rf_afhi, rf_afhi$CV_R2 > 0.01)
+for (i in 1:length(rf_afhi$Gene_ID)){
+  rf_afhi$Gene_ID[i] <- gsub('\\.[0-9]+','',rf_afhi$Gene_ID[i])
+} #just to remove the decimal places in the gene_id
+
+
+rf_afhi_2_mets <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_AFHI_2_METS_rf_cor_test_full_chr.txt", header = T)
+rf_afhi_2_mets$gene_id <- as.character(rf_afhi_2_mets$gene_id)
+
+filt_rf_afhi_2_mets <- inner_join(rf_afhi, rf_afhi_2_mets, by = c("Gene_ID" = "gene_id")) #filter by CV R2 > 0.01
+filt_rf_afhi_2_mets <- filt_rf_afhi_2_mets[,c(1,13)]
+names(filt_rf_afhi_2_mets) <- c("gene", "rf_spearman")
+
+elnet_afhi_2_mets_0.1 <- subset(elnet_afhi_2_mets, spearman > 0.1)
+filt_rf_afhi_2_mets_0.1 <- subset(filt_rf_afhi_2_mets, rf_spearman > 0.1)
+filt_elnet_rf_afhi_2_mets_0.1 <- inner_join(elnet_afhi_2_mets_0.1, filt_rf_afhi_2_mets_0.1, by = c("gene" = "gene"))
+#plot, NOTE all models here are optimized
+ggplot(filt_elnet_rf_afhi_2_mets_0.1, aes(x=spearman, y=rf_spearman)) + 
+  ggtitle("Spearman corr of EN vs RF (AFHI to METS)") + 
+  ylab("Random Forest") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(0,1)) + ylim(c(0,1)) + 
+  theme_bw(20)
+
+ggscatter(filt_elnet_rf_afhi_2_mets_0.1, x = "spearman", y = "rf_spearman", add = "reg.line", add.params = list(color="red"), conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Elastic Net", ylab = "Random Forest",
+          xlim = c(0, 1), ylim = c(0, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")+
+          theme_classic2(20) +
+          ggtitle("AFHI to METS")
+
+
+filt_elnet_rf_afhi_2_mets <- inner_join(elnet_afhi_2_mets, filt_rf_afhi_2_mets, by = c("gene" = "gene"))
+sub_elnet_rf_afhi_2_mets <- subset(filt_elnet_rf_afhi_2_mets, spearman > 0.1 | rf_spearman > 0.1) #removes where both are < 0.1
+#suband_elnet_rf_afa_2_mets <- subset(filt_elnet_rf_afa_2_mets, spearman > 0.1 & rf_spearman > 0.1) # where both are > 0.1
+#Plot
+ggplot(sub_elnet_rf_afhi_2_mets, aes(x=spearman, y=rf_spearman)) + 
+  ggtitle("Spearman Corr of Observed and Predicted Gene Expression (AFA to METS)") + 
+  ylab("Random Forest") + xlab("Elastic Net") +
+  geom_point(shape=1) + geom_abline(slope=1,intercept=0,col='blue') + xlim(c(-0.4,1)) + ylim(c(-0.4,1)) + theme_bw()
+
+#Then find the genes where EN or RF is positive and the other negative 
+#Do FUMA on top 10 of theses genes
+rfpos <- subset(sub_elnet_rf_afhi_2_mets, spearman < 0)
+enpos <- subset(sub_elnet_rf_afhi_2_mets, rf_spearman < 0)
+
+##########
+#get the genes that are not in the other. rf genes not in en. also en genes not in rf
+#Do FUMA on top 10 of these genes
+rfonly <- left_join(filt_rf_afhi_2_mets_0.1, elnet_afhi_2_mets_0.1, by = c("gene" = "gene"))
+rfonly <- rfonly[is.na(rfonly$spearman),]
+rfonly <- anti_join(filt_rf_afhi_2_mets_0.1, elnet_afhi_2_mets_0.1, by = c("gene" = "gene")) #Better!
+rfonly_den <- data.frame(spearman=rfonly$rf_spearman, prediction=rep("RF Only", length(rfonly$rf_spearman)))
+
+
+enonly <- left_join(elnet_afhi_2_mets_0.1, filt_rf_afhi_2_mets_0.1,by = c("gene" = "gene"))
+enonly <- enonly[is.na(enonly$rf_spearman),]
+enonly <- anti_join(elnet_afhi_2_mets_0.1, filt_rf_afhi_2_mets_0.1,by = c("gene" = "gene"))
+enonly_den <- data.frame(spearman=enonly$spearman, prediction=rep("EN Only", length(enonly$spearman)))
+
+
+enplusrf_rf <- data.frame(spearman=filt_elnet_rf_afhi_2_mets_0.1$rf_spearman, 
+                          prediction=rep("EN+RF RF Only",length(filt_elnet_rf_afhi_2_mets_0.1$rf_spearman)))
+
+enplusrf_en <- data.frame(spearman=filt_elnet_rf_afhi_2_mets_0.1$spearman, 
+                          prediction=rep("EN+RF EN Only",length(filt_elnet_rf_afhi_2_mets_0.1$spearman)))
+
+
+den_afhi_2_mets <- rbind(rfonly_den, enonly_den, enplusrf_rf, enplusrf_en)
+#rbind(rfonly_den, enonly_den, enplusrf_rf, enplusrf_en)
+enonly_e <- anti_join(enonly,filt_elnet_rf_afhi_2_mets_0.1,by = c("gene" = "gene")) #just to confirm enonly == enonly_e
+#find the name of those genes
+gv18 <- read.table(file = "Z:/data/mesa_models/gencode.v18.annotation.parsed.txt", header = T)
+###########
+#Make bar plot with count of genes in only ML, EN, and EN intersect ML for genes R > 0.1
+gcount <- data.frame(ml=c("Random Forest", "Elastic NET", "Intersect"), 
+                     no=c(length(rfonly$gene), length(enonly$gene),length(filt_elnet_rf_afhi_2_mets_0.1$gene)))
+
+ggplot(data=gcount, aes(x=ml, y=no, fill=ml)) + geom_bar(stat="identity") + ylab("Gene Count") + xlab("Models") +
+  ggtitle("Genes in Models (AFHI 2 METS)") + geom_text(aes(label=no), vjust=1, color="white", size=10) +
+  scale_fill_manual(values = c("blue","violet","red")) + 
+  theme_minimal(20) # scale_fill_manual is how to give my own color specification
+
+#Density plots R > 0.1
+ggplot(enonly, aes(x = spearman)) + scale_x_continuous(name = "Spearman Correlation > 0.1") +
+  scale_y_continuous(name = "Density") + ggtitle("Density plot of Genes only in Elastic Net (AFHI 2 METS)") +
+  geom_density(fill = "red", colour = "red", alpha=0.6) + theme_bw() +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")#EN only genes
+
+ggplot(rfonly, aes(x = rf_spearman)) + scale_x_continuous(name = "Spearman Correlation > 0.1") +
+  scale_y_continuous(name = "Density") + ggtitle("Density plot of Genes only in Random Forest (AFHI 2 METS)") +
+  geom_density(fill = "blue", colour = "blue", alpha=0.6) + theme_bw() +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")#RF only genes
+
+ggplot(filt_elnet_rf_afhi_2_mets_0.1, aes(x = rf_spearman)) + scale_x_continuous(name = "Spearman Correlation > 0.1") +
+  scale_y_continuous(name = "Density") + ggtitle("Density plot of Genes in Intersect of RF and EN for Random Forest (AFHI 2 METS)") +
+  geom_density(fill = "green", colour = "green", alpha=0.6) + theme_bw() +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed") #intersect of RF and EN
+
+ggplot(filt_elnet_rf_afhi_2_mets_0.1, aes(x = spearman)) + scale_x_continuous(name = "Spearman Correlation > 0.1") +
+  scale_y_continuous(name = "Density") + ggtitle("Density plot of Genes in Intersect of RF and EN for Elastic Net (AFHI 2 METS)") +
+  geom_density(fill = "green4", colour = "green4", alpha=0.6) + theme_bw() +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed") #intersect of RF and EN
+
+#find the mean of each ML group
+library(plyr)
+mu <- ddply(den_afhi_2_mets, "prediction", summarise, grp.mean=mean(spearman))
+
+#Combine all density plot into one
+ggplot(den_afhi_2_mets, aes(x = spearman, color=prediction)) + scale_x_continuous(name = "Spearman Correlation > 0.1") + 
+  ggtitle("Density plot of Genes in Intersect of RF and EN for Elastic Net (AFHI 2 METS)") +
+  geom_density()+ theme_bw() +
+  geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed") + 
+  scale_color_manual(values = c("red","blue","orange","violet"))
+
+# lwd = line thickness
+ggplot(den_afhi_2_mets, aes(x = spearman, color=prediction, lwd=1.5)) + 
+  scale_x_continuous(name = "Spearman Correlation > 0.1") +
+  geom_density()+ theme_classic(20) +
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=prediction),linetype="longdash", lwd=1) +
+  scale_color_manual(values = c("red","blue","orange","violet")) #+
+#geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")
+
+breaks=c("EN+RF EN Only", "EN+RF RF Only","EN Only", "RF Only")
+
+# make density plot for EN intersect RF AFA 2 METS
+int_enrf_en <- data.frame(spearman=filt_elnet_rf_afhi_2_mets_0.1$spearman, 
+                          prediction=rep("EN",length(filt_elnet_rf_afhi_2_mets_0.1$spearman)))
+
+int_enrf_rf <- data.frame(spearman=filt_elnet_rf_afhi_2_mets_0.1$rf_spearman, 
+                          prediction=rep("RF",length(filt_elnet_rf_afhi_2_mets_0.1$rf_spearman)))
+
+den_int_enrf <- rbind(int_enrf_en, int_enrf_rf)
+#find the mean of each ML group
+library(plyr)
+mu <- ddply(den_int_enrf, "prediction", summarise, grp.mean=mean(spearman))
+
+# lwd = line thickness
+ggplot(den_int_enrf, aes(x = spearman, color=prediction, lwd=1.5)) + 
+  scale_x_continuous(name = "Spearman Correlation > 0.1") + 
+  ggtitle("Density plot of Intersect Genes for RF and EN (AFHI 2 METS)") +
+  geom_density()+ theme_classic() +
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=prediction),linetype="longdash", lwd=1) #+
+#geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")
+
+
+
+
+
+
+#########################################################ALL
+#ALL  chr6 chunk2 check
+
+all_chr6_chk2 <- read.table("Z:/data/mesa_models/python_ml_models/ALL_results/grid_split/ALL_best_grid_split_rf_cv_chr6_chunk2.txt", header=T)
+
+all_chr6_chk1 <- read.table("Z:/data/mesa_models/python_ml_models/ALL_results/grid_split/ALL_best_grid_split_rf_cv_chr6_chunk1.txt", header=T)
+
+
+all_chr6_chk3 <- read.table("Z:/data/mesa_models/python_ml_models/ALL_results/grid_split/ALL_best_grid_split_rf_cv_chr6_chunk3.txt", header=T)
+
+all_chr6_chk4 <- read.table("Z:/data/mesa_models/python_ml_models/ALL_results/grid_split/ALL_best_grid_split_rf_cv_chr6_chunk4.txt", header=T)
+
+all_chr6_chk5 <- read.table("Z:/data/mesa_models/python_ml_models/ALL_results/grid_split/ALL_best_grid_split_rf_cv_chr6_chunk5.txt", header=T)
