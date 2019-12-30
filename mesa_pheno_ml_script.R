@@ -1,6 +1,6 @@
 #lipid_pheno <- read.csv(file = "Z:/data/mesa_models/mesa_pheno/Exam1Main.csv", header = T)
 
-thrombomodulin <- read.table(file = "/home/pokoro/data/mesa_models/mesa_pheno/thrombotic/MESA_thrombotic_phenotypes.txt", header=T)
+thrombomodulin <- read.table(file = "z:/data/mesa_models/mesa_pheno/thrombotic/MESA_thrombotic_phenotypes.txt", header=T)
 
 #check CAU dosages for thrombomodulin
 print("check CAU dosages for thrombomodulin")
@@ -52,6 +52,7 @@ mcaucol <- sort(mcaucol)
 print("keep sample ID's that are not in the dosages used to build model")
 fcau <- caudos1[, !(names(caudos1) %in% mcaucol)] #keep sample ID's that are not in the dosages used to build model
 
+
 #drop NA in phenotype
 print("drop NA in phenotype")
 library(tidyverse)
@@ -83,17 +84,34 @@ library(data.table)
 #use loop to go through all the 22 chromosomes
 "%&%" <- function(a,b) paste(a,b, sep = "")
 
-for (i in 1:22){
+for (i in 9:22){
   print(i)
   
-  caupheno <- fread(file = "/home/pokoro/data/mesa_models/mesa_pheno/thrombotic/chr" %&% i %&% "txt.gz", header=T, showProgress=T)
-  for (i in 1:length(caupheno)){
-    colnames(caupheno)[i] <- strsplit(colnames(caupheno)[i], "_")[[1]][2]
+  caupheno <- read.table(file = "/home/pokoro/data/mesa_models/mesa_pheno/thrombotic/chr" %&% i %&% "txt.gz", header=T)
+  for (j in 6:length(caupheno)){
+    colnames(caupheno)[j] <- strsplit(colnames(caupheno)[j], "_")[[1]][2]
   }# just to convert the columns to only string of numbers
   
-  caupheno <- caupheno[, (names(caupheno) %in% header)] #keep only columns that in the header
+  caupheno <- caupheno[, (names(caupheno) %in% header)] #keep only columns that are in the header
   #Now write the dosage file back
   
   write.table(caupheno, file = "/home/pokoro/data/mesa_models/mesa_pheno/thrombotic/cau_dosage_chr" %&% i %&% ".txt", quote=F, row.names=F, sep ="\t")
   
 }
+
+
+
+
+#caupheno <- read.table(file = "Z:/data/mesa_models/mesa_pheno/thrombotic/cau_dosage_chr1.txt", header=T, nrow=3)
+
+#caudoschr <- read.table(file = "Z:/data/mesa_models/mesa_pheno/thrombotic/chr1txt.gz", header=T, nrows = 3)
+
+#for (i in 6:length(caudoschr)){
+#  colnames(caudoschr)[i] <- strsplit(colnames(caudoschr)[i], "_")[[1]][2]
+#}
+
+#caudoschr <- caudoschr[, (names(caudoschr) %in% header)]
+
+#mcaudos1 <- read.table(file = "Z:/data/mesa_models/cau/CAU_1_snp.txt", header=T, nrow=1)
+
+#write.table(caudoschr, file = "Z:/data/mesa_models/mesa_pheno/thrombotic/try2.txt", quote=F, sep="\t", row.names=F)

@@ -2897,8 +2897,17 @@ ggplot(den_int_enrf, aes(x = spearman, color=prediction, lwd=1.5)) +
 #########################################################ALL
 #ALL  chr6 chunk2 check
 
-all_chr6_chk2 <- read.table("Z:/data/mesa_models/python_ml_models/ALL_results/grid_split/ALL_best_grid_split_rf_cv_chr6_chunk2.txt", header=T)
+all_chr6_chk2 <- read.table("Z:/data/mesa_models/python_ml_models/ALL_results/grid_split/ALL_best_grid_split_knn_cv_chr6_chunk2.txt", header=T)
 
+all2nd_chr6_chk2 <- read.table("Z:/data/mesa_models/python_ml_models/ALL_results/2nd_grid/2nd_ALL_best_grid_split_knn_cv_chr6_chunk2.txt", header=T)
+
+###it is remaining one gene, find that gene and run it
+#recreate chr6chk2
+chr6chk2_104g <- rbind(all_chr6_chk2,all2nd_chr6_chk2[c(2,3),])
+write.table(chr6chk2_104g, file="Z:/data/mesa_models/python_ml_models/ALL_results/grid_split/ALL_best_grid_split_knn_cv_chr6_chunk2_104g.txt", quote=F, row.names=F, sep ="\t")
+
+
+#check the other chunks
 all_chr6_chk1 <- read.table("Z:/data/mesa_models/python_ml_models/ALL_results/grid_split/ALL_best_grid_split_rf_cv_chr6_chunk1.txt", header=T)
 
 
