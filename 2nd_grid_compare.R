@@ -1427,6 +1427,46 @@ write.table(svr, file = "Z:/data/mesa_models/python_ml_models/results/grid_optim
 
 
 
+##############################################################################################################################
+# Merge ALL best grids
+
+"%&%" <- function(a,b) paste(a,b, sep = "")
+
+
+#Merging all the chunks that were complete
+algs <- c("rf", "svr", "knn")
+pop <- "ALL"
+
+for (alg in algs){
+  for (no in 1:22){
+    allchk <- NULL
+    for (k in 1:5){
+      allchk <- rbind(allchk, read.table(file = "Z:/data/mesa_models/python_ml_models/ALL_results/" %&% pop %&% "_best_grid_split_"%&% alg %&% "_cv_chr" %&% no %&% "_chunk" %&% k %&% ".txt", header = T, sep = "\t", stringsAsFactors = F))
+    }
+    write.table(allchk, file="Z:/data/mesa_models/python_ml_models/merged_chunk_results/" %&% pop %&% "_best_grid_"%&% alg %&% "_chr" %&% no %&% "_full.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+  }
+}
+
+bgrid_all_chr1_rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/ALL_best_grid_rf_chr1_full.txt", header = T)
+
+
+#This is the correct way I Should do merge all the chunks and the chromosomes into one single large file
+for (alg in algs){
+  allchr <- NULL
+  for (no in 1:22){
+    #allchr <- NULL
+    for (k in 1:5){
+      allchr <- rbind(allchr, read.table(file = "Z:/data/mesa_models/python_ml_models/ALL_results/" %&% pop %&% "_best_grid_split_"%&% alg %&% "_cv_chr"%&% no %&% "_chunk" %&% k %&% ".txt", header = T, sep = "\t", stringsAsFactors = F))
+    }
+  }
+  write.table(allchr, file="Z:/data/mesa_models/python_ml_models/merged_chunk_results/" %&% pop %&% "_best_grid_"%&% alg %&% "_all_chrom.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+}
+
+bgrid_all_rf <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/ALL_best_grid_rf_all_chrom.txt", header = T)
+bgrid_all_knn <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/ALL_best_grid_knn_all_chrom.txt", header = T)
+bgrid_all_svr <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/ALL_best_grid_svr_all_chrom.txt", header = T)
+
+
 
 
 ##############################################################################################################################
@@ -2898,14 +2938,26 @@ ggplot(den_int_enrf, aes(x = spearman, color=prediction, lwd=1.5)) +
 #ALL  chr6 chunk2 check
 
 all_chr6_chk2 <- read.table("Z:/data/mesa_models/python_ml_models/ALL_results/grid_split/ALL_best_grid_split_knn_cv_chr6_chunk2.txt", header=T)
+all_chr6_chk2$Gene_ID <- as.character(all_chr6_chk2$Gene_ID)
 
-all2nd_chr6_chk2 <- read.table("Z:/data/mesa_models/python_ml_models/ALL_results/2nd_grid/2nd_ALL_best_grid_split_knn_cv_chr6_chunk2.txt", header=T)
+#merge the chr6chk2
+all_chr6_chk2 <- read.table("Z:/data/mesa_models/python_ml_models/ALL_results/ALL_best_grid_split_svr_cv_chr6_chunk2.txt", header=T)
+all2nd_chr6_chk2 <- read.table("Z:/data/mesa_models/python_ml_models/ALL_results/2nd_grid/2nd_ALL_best_grid_split_svr_cv_chr6_chunk2.txt", header=T)
 
-###it is remaining one gene, find that gene and run it
-#recreate chr6chk2
-chr6chk2_104g <- rbind(all_chr6_chk2,all2nd_chr6_chk2[c(2,3),])
-write.table(chr6chk2_104g, file="Z:/data/mesa_models/python_ml_models/ALL_results/grid_split/ALL_best_grid_split_knn_cv_chr6_chunk2_104g.txt", quote=F, row.names=F, sep ="\t")
+#recreate chr6chk2 add the remaining one gene
+chr6chk2_104g <- rbind(all_chr6_chk2,all2nd_chr6_chk2[2,])
+write.table(chr6chk2_104g, file="Z:/data/mesa_models/python_ml_models/ALL_results//ALL_best_grid_split_svr_cv_chr6_chunk2.txt", quote=F, row.names=F, sep ="\t")
 
+#check 104g again and compare with chr6chk2
+genes_104 <- read.table("Z:/data/mesa_models/python_ml_models/ALL_results/grid_split/ALL_best_grid_split_knn_cv_chr6_chunk2_104g.txt", header=T)
+genes_104$Gene_ID <- as.character(genes_104$Gene_ID)
+
+library(dplyr)
+missing_g <- anti_join(all_chr6_chk2, genes_104, by=c("Gene_ID"="Gene_ID"))
+missing_g2 <- anti_join(genes_104, all_chr6_chk2, by=c("Gene_ID"="Gene_ID"))
+
+#read the complete 104g
+g104c_svr <- read.table("Z:/data/mesa_models/python_ml_models/ALL_results/2nd_grid/104g_2nd_ALL_best_grid_split_svr_cv_chr6_chunk2.txt", header=T)
 
 #check the other chunks
 all_chr6_chk1 <- read.table("Z:/data/mesa_models/python_ml_models/ALL_results/grid_split/ALL_best_grid_split_rf_cv_chr6_chunk1.txt", header=T)
