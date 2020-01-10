@@ -634,6 +634,7 @@ ggplot(knn_mesa_2_mets, aes(x=prediction, y=spearman, color=prediction, fill=pre
 
 
 #head to head comparison of EN vs ML on performance in METS using AFA
+library(dplyr)
 #EN
 en_afa <- read.table(file = "Z:/data/mesa_models/split_mesa/results/all_chr_AFA_model_summaries.txt", header = TRUE)
 en_afa$gene_id <- as.character(en_afa$gene_id)
@@ -731,3 +732,31 @@ ggplot(en_knn, aes(x=en, y=knn)) + geom_point() + geom_abline(intercept=0, slope
   geom_smooth(method="lm", color="red") + xlim(0,1) + ylim(0,1) + xlab("Elastic Net") + ylab("K-Nearest Neighbor") +
   theme_classic(20)# + ggtitle("Cross Validation Perfromance") (save at width=850, height=600)
 
+
+#check and find genes in EN and RF AFA2METS models
+en_rfboth <- inner_join(filt_en_afa_2_mets, filt_rf_afa_2_mets, by = c("gene"="gene"))
+names(en_rfboth) <- c("gene", "en_spearman", "rf_spearman")
+enplusrf_rf <- data.frame(spearman=en_rfboth$rf_spearman,prediction=rep("EN+RF RF Only",length(en_rfboth$rf_spearman)))
+enplusrf_en <- data.frame(spearman=en_rfboth$en_spearman,prediction=rep("EN+RF EN Only",length(en_rfboth$en_spearman)))
+
+rfonly <- anti_join(filt_rf_afa_2_mets, filt_en_afa_2_mets, by = c("gene" = "gene"))
+rfonly <- anti_join(rfonly, en_rfboth, by = c("gene" = "gene")) #2nd check
+rfonly_den <- data.frame(spearman=rfonly$spearman, prediction=rep("RF Only", length(rfonly$spearman)))
+
+enonly <- anti_join(filt_en_afa_2_mets, filt_rf_afa_2_mets, by = c("gene" = "gene")) 
+enonly <- anti_join(enonly, en_rfboth, by = c("gene" = "gene")) #2nd check
+enonly_den <- data.frame(spearman=enonly$spearman, prediction=rep("EN Only", length(enonly$spearman)))
+
+den_afa_2_mets <- rbind(rfonly_den, enonly_den, enplusrf_rf, enplusrf_en)
+
+#find the mean of each ML group
+library(plyr)
+mu <- ddply(den_afa_2_mets, "prediction", summarise, grp.median=median(spearman))
+
+# lwd = line thickness
+ggplot(den_afa_2_mets, aes(x = spearman, color=prediction, lwd=1)) + 
+  scale_x_continuous(name = "Spearman Correlation > 0.1") +
+  geom_density()+ theme_classic(20) +
+  geom_vline(data=mu, aes(xintercept=grp.median, color=prediction),linetype="longdash", lwd=1) +
+  scale_color_manual(values = c("red","blue","orange","violet")) #+
+#geom_vline(xintercept = 0.5, size = 1, colour = "gold4", linetype = "dashed")

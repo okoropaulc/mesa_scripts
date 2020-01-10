@@ -1470,8 +1470,32 @@ bgrid_all_svr <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_
 
 
 ##############################################################################################################################
+################################################################################################################################
+# Merge ALL 2 METS
+
+"%&%" <- function(a,b) paste(a,b, sep = "")
+
+knn <- NULL
+rf <- NULL
+svr <- NULL
+pop <- "ALL"
+
+for (chrom in 1:22) {
+  no <- as.character(chrom)
+  knn <- rbind(knn, read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_knn_cor_test_chr" %&% chrom %&% ".txt", header = T, stringsAsFactors = F, sep = "\t"))
+  rf <- rbind(rf, read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_rf_cor_test_chr" %&% chrom %&% ".txt", header = T, stringsAsFactors = F, sep = "\t"))
+  svr <- rbind(svr, read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_svr_cor_test_chr" %&% chrom %&% ".txt", header = T, stringsAsFactors = F, sep = "\t"))
+}
+
+#write out the merged full chromosomes
+write.table(knn, file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_knn_cor_test_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+write.table(rf, file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_rf_cor_test_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+write.table(svr, file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_" %&% pop %&% "_2_METS_svr_cor_test_full_chr.txt", quote = FALSE, sep = "\t", row.names = FALSE)
 
 
+knn <- subset(knn, knn$spearman_yobs_vs_ypred..d.>0.1)
+rf <- subset(rf, rf$spearman_yobs_vs_ypred..d.>0.1)
+svr <- subset(svr, svr$spearman_yobs_vs_ypred..d.>0.1)
 
 #############################################################################################################################
 #Compare model Optimized performance on HIS 2 METS as against Elastic Net
