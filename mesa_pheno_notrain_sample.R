@@ -1,11 +1,11 @@
 #lipid_pheno <- read.csv(file = "Z:/data/mesa_models/mesa_pheno/Exam1Main.csv", header = T)
 
-thrombomodulin <- read.table(file = "/home/pokoro/data/mesa_models/mesa_pheno/thrombotic/MESA_thrombotic_phenotypes.txt", header=T)
+thrombomodulin <- read.table(file = "Z:/data/mesa_models/mesa_pheno/thrombotic/MESA_thrombotic_phenotypes.txt", header=T)
 
 #check CAU dosages for thrombomodulin
 print("check CAU dosages for thrombomodulin")
 
-caudos1 <- read.table(file = "/home/pokoro/data/mesa_models/mesa_pheno/thrombotic/chr1txt.gz", header=T, nrows = 3)
+caudos1 <- read.table(file = "Z:/data/mesa_models/mesa_pheno/thrombotic/chr1txt.gz", header=T, nrows = 3)
 header3 <- colnames(caudos1)[1:6] #store the names of the first six column
 
 caudos1[,c(1:6)] <- NULL
@@ -22,7 +22,7 @@ for (i in 1:length(caudos1)){
 }
 
 #read in the mesa cau samples used to build the model
-mcaudos1 <- read.table(file = "/home/pokoro/data/mesa_models/cau/CAU_1_snp.txt", header=T, nrow=1)
+mcaudos1 <- read.table(file = "Z:/data/mesa_models/cau/CAU_1_snp.txt", header=T, nrow=1)
 mcaudos1$id <- NULL
 
 #change the colnames to numbers only
@@ -128,11 +128,12 @@ for (j in 1:22){
 }
 
 
-#rfgex <- read.table(file="Z:/data/mesa_models/python_ml_models/results/CAU_2_METS_rf_predicted_gene_expr_chr1.txt", header=T)
+rfgex <- read.table(file="Z:/data/mesa_models/python_ml_models/results/AFA_2_CAU_knn_predicted_gene_expr_chr1.txt", header=T, nrows=5)
 
 #caupheno <- read.table(file = "Z:/data/mesa_models/mesa_pheno/thrombotic/cau_dosage_chr1_all_sample.txt", header=T, nrow=3)
 #mcaudos1 <- read.table(file = "Z:/data/mesa_models/cau/CAU_1_snp.txt", header=T, nrow=3)
 #caudoschr <- read.table(file = "Z:/data/mesa_models/mesa_pheno/thrombotic/chr1txt.gz", header=T, nrows = 3)
+caunotrain <- read.table(file="Z:/data/mesa_models/mesa_pheno/thrombotic/cau_imputation_dosage_nocautrain_chr1.txt", header=T, nrows=3)
 
 #for (i in 6:length(caudoschr)){
 #  colnames(caudoschr)[i] <- strsplit(colnames(caudoschr)[i], "_")[[1]][2]
