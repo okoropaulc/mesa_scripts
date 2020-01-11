@@ -12,6 +12,7 @@
 library(data.table)
 #build snp annot file for each of the chrom
 
+
 print("loop started")
 
 for (j in 1:22){
