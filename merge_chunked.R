@@ -6,7 +6,8 @@ algs <- c("rf", "svr", "knn")
 rf <- NULL
 svr <- NULL
 knn <- NULL
-#chr9_chunk5_ALL_2_CAU_thrombomodulin_rankplt5_phenosvr_pred_expr.txt
+
+#eg file; chr9_chunk5_ALL_2_CAU_thrombomodulin_rankplt5_phenosvr_pred_expr.txt
 #chunked chroms are
 chunked <- c(1,2,3,4,5,6,7,8,9,10,11,12,14,15,16,17,19,20,22)
 for (i in chunked){
@@ -43,7 +44,7 @@ chr21rf <- fread(file="/home/pokoro/data/mesa_models/mesa_pheno/thrombotic/pred_
 #merge them with the all
 rf <- rbind(rf, chr21rf, chr18rf, chr13rf)
 svr <- rbind(svr, chr21svr, chr18svr, chr13svr)
-rf <- rbind(knn, chr21knn, chr18knn, chr13knn)
+knn <- rbind(knn, chr21knn, chr18knn, chr13knn)
 
 
 fwrite(rf, file="/home/pokoro/data/mesa_models/mesa_pheno/thrombotic/pred_expr/chunk/full_chrom_ALL_2_CAU_thrombomodulin_rankplt5_pheno_rf_pred_expr.txt", row.names=F, quote=F, sep="\t")
@@ -52,7 +53,7 @@ fwrite(knn, file="/home/pokoro/data/mesa_models/mesa_pheno/thrombotic/pred_expr/
 
 
 #transform the pred exp to the required
-#svr
+#rf
 trf <- as.data.frame(t(rf))
 rowrf <- rf$gene_id #take the gene id's
 colnames(trf) <- rowrf

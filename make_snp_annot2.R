@@ -48,11 +48,11 @@ for (i in 1:nrow(cau_imp)){
 cau_svr <- fread(file="Z:/data/mesa_models/mesa_pheno/thrombotic/pred_expr/ALL_2_CAU_thrombomodulin_rankplt5_phenosvr_pred_expr_8.txt", header=T)
 cau_svr14 <- fread(file="Z:/data/mesa_models/mesa_pheno/thrombotic/pred_expr/ALL_2_CAU_thrombomodulin_rankplt5_phenosvr_pred_expr_14.txt", header=T)
 
-cau_rf81 <- fread(file="Z:/data/mesa_models/mesa_pheno/thrombotic/pred_expr/chunk/chr19_chunk1_ALL_2_CAU_thrombomodulin_rankplt5_phenorf_pred_expr.txt",header=T)
-cau_rf82 <- fread(file="Z:/data/mesa_models/mesa_pheno/thrombotic/pred_expr/chunk/chr19_chunk2_ALL_2_CAU_thrombomodulin_rankplt5_phenorf_pred_expr.txt",header=T)
-cau_rf83 <- fread(file="Z:/data/mesa_models/mesa_pheno/thrombotic/pred_expr/chunk/chr19_chunk3_ALL_2_CAU_thrombomodulin_rankplt5_phenorf_pred_expr.txt",header=T)
-cau_rf84 <- fread(file="Z:/data/mesa_models/mesa_pheno/thrombotic/pred_expr/chunk/chr19_chunk4_ALL_2_CAU_thrombomodulin_rankplt5_phenorf_pred_expr.txt",header=T)
-cau_rf85 <- fread(file="Z:/data/mesa_models/mesa_pheno/thrombotic/pred_expr/chunk/chr19_chunk5_ALL_2_CAU_thrombomodulin_rankplt5_phenorf_pred_expr.txt",header=T)
+cau_rf61 <- fread(file="Z:/data/mesa_models/mesa_pheno/thrombotic/pred_expr/chunk/chr6_chunk1_ALL_2_CAU_thrombomodulin_rankplt5_phenorf_pred_expr.txt",header=T)
+cau_rf62 <- fread(file="Z:/data/mesa_models/mesa_pheno/thrombotic/pred_expr/chunk/chr6_chunk2_ALL_2_CAU_thrombomodulin_rankplt5_phenorf_pred_expr.txt",header=T)
+cau_rf63 <- fread(file="Z:/data/mesa_models/mesa_pheno/thrombotic/pred_expr/chunk/chr6_chunk3_ALL_2_CAU_thrombomodulin_rankplt5_phenorf_pred_expr.txt",header=T)
+cau_rf64 <- fread(file="Z:/data/mesa_models/mesa_pheno/thrombotic/pred_expr/chunk/chr6_chunk4_ALL_2_CAU_thrombomodulin_rankplt5_phenorf_pred_expr.txt",header=T)
+cau_rf65 <- fread(file="Z:/data/mesa_models/mesa_pheno/thrombotic/pred_expr/chunk/chr6_chunk5_ALL_2_CAU_thrombomodulin_rankplt5_phenorf_pred_expr.txt",header=T)
 
 cau_rf145 <- fread(file="Z:/data/mesa_models/mesa_pheno/thrombotic/pred_expr/chunk/chr14_chunk5_ALL_2_CAU_thrombomodulin_rankplt5_phenorf_pred_expr.txt",header=T)
 
