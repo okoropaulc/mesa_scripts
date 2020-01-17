@@ -46,10 +46,11 @@ merge_id <- inner_join(dos_id_col, thrombomodulin, by = c("IID" ="IID"))
 dos_id_col <- cbind(dos_id_col, dos_id_col)
 names(dos_id_col) <- c("FID", "IID")
 
-fwrite(dos_id_col, file="Z:/data/mesa_models/mesa_pheno/thrombotic/predixcan_imputation/cau_rankplt5_samples.txt", row.name=F, quote=F, sep="\t")
+#predixcan does not want the sample file to have columns
+fwrite(dos_id_col, file="Z:/data/mesa_models/mesa_pheno/thrombotic/predixcan/cau_rankplt5_samples.txt", row.name=F, quote=F, sep="\t", col.names=F)
 
 
 #make the pheno file in the format required for predixcan FID IID phenotype
 pheno_file <- cbind(dos_id_col, merge_id)
 pheno_file <- pheno_file[,c(1,2,4)] #keep only FID, IID, phenotype cols
-fwrite(pheno_file, file="Z:/data/mesa_models/mesa_pheno/thrombotic/predixcan_imputation/pheno_rankplt5.txt", row.name=F, quote=F, sep="\t")
+fwrite(pheno_file, file="Z:/data/mesa_models/mesa_pheno/thrombotic/predixcan/pheno_rankplt5.txt", row.name=F, quote=F, sep="\t")
