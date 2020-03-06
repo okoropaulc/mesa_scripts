@@ -91,9 +91,9 @@ ldl_mesa_notrain <- anti_join(ldl_mesa, train_all_sam, by = c("sidno"="IID"))
 hdl_mesa_notrain <- anti_join(hdl_mesa, train_all_sam, by = c("sidno"="IID"))
 chol_mesa_notrain <- anti_join(chol_mesa, train_all_sam, by = c("sidno"="IID"))
 write.table(trig_mesa_notrain, file="Z:/data/twas_mesa/trig_notrain.txt",quote=F, row.names=F, sep="\t")
-write.table(ldl_mesa_notrain, file="Z:/data/twas_mesa/ldl_train.txt",quote=F, row.names=F, sep="\t")
+write.table(ldl_mesa_notrain, file="Z:/data/twas_mesa/ldl_notrain.txt",quote=F, row.names=F, sep="\t")
 write.table(hdl_mesa_notrain, file="Z:/data/twas_mesa/hdl_notrain.txt",quote=F, row.names=F, sep="\t")
-write.table(chol_mesa_notrain, file="Z:/data/twas_mesa/chol_train.txt",quote=F, row.names=F, sep="\t")
+write.table(chol_mesa_notrain, file="Z:/data/twas_mesa/chol_notrain.txt",quote=F, row.names=F, sep="\t")
 
 
 #mesa samples for platelet count

@@ -9,13 +9,17 @@
 
 #CAU
 en_cau <- read.table(file = "Z:/data/mesa_models/MESA.CAU.WG.PC3.PF10.1000kb_WG_model_summaries.txt", header=T)
-en_cau <- subset(en_cau, cv_R2_avg > 0.01)
+en_cau <- subset(en_cau, cv_R2_avg > 0.5)
+en_cau <- en_cau[,c(1,10)]
+names(en_cau) <- c("gene", "en")
 
-en_cau2 <- read.table(file = "Z:/data/MESA.CAU.WG.PC3.PF10.1000kb_WG_model_summaries.txt", header=T)
-en_cau2 <- subset(en_cau2, cv_R2_avg > 0.01)
+#en_cau2 <- read.table(file = "Z:/data/MESA.CAU.WG.PC3.PF10.1000kb_WG_model_summaries.txt", header=T)
+#en_cau2 <- subset(en_cau2, cv_R2_avg > 0.5)
 #HIS
 en_his <- read.table(file = "Z:/data/mesa_models/MESA.HIS.WG.PC3.PF10.1000kb_WG_model_summaries.txt", header=T)
-en_his <- subset(en_his, cv_R2_avg > 0.01)
+en_his <- subset(en_his, cv_R2_avg > 0.5)
+en_his <- en_his[,c(1,10)]
+names(en_his) <- c("gene", "en")
 
 #AFA
 en_afa <- read.table(file = "Z:/data/mesa_models/split_mesa/results/all_chr_AFA_model_summaries.txt", header = TRUE)
@@ -23,23 +27,24 @@ en_afa$gene_id <- as.character(en_afa$gene_id)
 
 mean(en_afa$cv_R2_avg)
 median(en_afa$cv_R2_avg)
-en_afa <- subset(en_afa, en_afa$cv_R2_avg > -1)
+en_afa <- subset(en_afa, en_afa$cv_R2_avg > 0.5)
 en_afa <- en_afa[,c(1,10)]
 names(en_afa) <- c("gene", "en")
 
-rf_afa <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/best_grid_rf_all_chrom.txt", header = T)
+#best_grid_rf_all_chrom.txt
+rf_afa <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/ALL_best_grid_rf_all_chrom.txt", header = T)
 rf_afa$Gene_ID <- as.character(rf_afa$Gene_ID)
 mean(rf_afa$CV_R2)
 median(rf_afa$CV_R2)
-rf_afa <- subset(rf_afa, rf_afa$CV_R2 > -1)
+rf_afa <- subset(rf_afa, rf_afa$CV_R2 > 0.5)
 rf_afa <- rf_afa[,c(1,3)]
 names(rf_afa) <- c("gene", "rf")
 
-svr_afa <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/best_grid_svr_all_chrom.txt", header = T)
+svr_afa <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/ALL_best_grid_svr_all_chrom.txt", header = T)
 svr_afa$Gene_ID <- as.character(svr_afa$Gene_ID)
 mean(svr_afa$CV_R2)
 median(svr_afa$CV_R2)
-svr_afa <- subset(svr_afa, svr_afa$CV_R2 > -1)
+svr_afa <- subset(svr_afa, svr_afa$CV_R2 > 0.5)
 svr_afa <- svr_afa[,c(1,3)]
 names(svr_afa) <- c("gene", "svr")
 
@@ -47,14 +52,36 @@ knn_afa <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_
 knn_afa$Gene_ID <- as.character(knn_afa$Gene_ID)
 mean(knn_afa$CV_R2)
 median(knn_afa$CV_R2)
-knn_afa <- subset(knn_afa, knn_afa$CV_R2 > -1)
+knn_afa <- subset(knn_afa, knn_afa$CV_R2 > 0.5)
 knn_afa <- knn_afa[,c(1,3)]
 names(knn_afa) <- c("gene", "knn")
 
+#check genes across models and populations
+library(dplyr)
+afa_genes <- inner_join(en_afa, knn_afa, by=c("gene_id"="Gene_ID"))
+afa_genes <- inner_join(afa_genes, svr_afa, by=c("gene_id"="Gene_ID"))
+afa_genes <- inner_join(afa_genes, rf_afa, by=c("gene_id"="Gene_ID"))
+
+his_genes <- inner_join(en_his, knn_afa, by=c("gene_id"="Gene_ID"))
+his_genes <- inner_join(his_genes, svr_afa, by=c("gene_id"="Gene_ID"))
+his_genes <- inner_join(his_genes, rf_afa, by=c("gene_id"="Gene_ID"))
+
+cau_genes <- inner_join(en_cau, knn_afa, by=c("gene_id"="Gene_ID"))
+cau_genes <- inner_join(cau_genes, svr_afa, by=c("gene_id"="Gene_ID"))
+cau_genes <- inner_join(cau_genes, rf_afa, by=c("gene_id"="Gene_ID"))
+
+all_genes <- inner_join(en_all, knn_afa, by=c("gene_id"="Gene_ID"))
+all_genes <- inner_join(all_genes, svr_afa, by=c("gene_id"="Gene_ID"))
+all_genes <- inner_join(all_genes, rf_afa, by=c("gene_id"="Gene_ID"))
+
+afa_his_cau_genes <- inner_join(afa_genes, his_genes, by=c("gene_id"="gene_id"))
+afa_his_cau_genes <- inner_join(afa_his_cau_genes, cau_genes, by=c("gene_id"="gene_id"))
+
+afa_his_cau_all_genes <- inner_join(afa_his_cau_genes, all_genes, by=c("gene_id"="gene_id"))
 
 # ML R2 comparisons against EN
 library(dplyr)
-en_rf <- inner_join(en_afa, rf_afa, by = c("gene"="gene"))
+en_rf <- inner_join(en_cau, rf_afa, by = c("gene"="gene"))
 cor.test(en_rf$en, en_rf$rf)
 t.test(en_rf$en, en_rf$rf)
 library("ggpubr")
@@ -66,23 +93,42 @@ ggscatter(en_rf, x = "en", y = "rf",
           xlim = c(-1, 1), ylim = c(-1, 1)) + geom_abline(intercept = 0, slope = 1, color="blue")
 
 library(ggplot2) #i used geom smooth to add the red regression line
-ggplot(en_rf, aes(x=en, y=rf)) + geom_point() + geom_abline(intercept=0, slope=1, color="blue") +
-  geom_smooth(method="lm", color="red") + xlim(-1,1) + ylim(-1,1) + xlab("Elastic Net") + ylab("Random Forest") +
-  theme_classic(20)# + ggtitle("Cross Validation Perfromance") (save at width=850, height=600)
+p1 <- ggplot(en_rf, aes(x=en, y=rf)) + geom_point() + geom_abline(intercept=0, slope=1, color="blue") +
+  geom_smooth(method="lm", color="red") + xlim(-0.1,1) + ylim(-1,1) + xlab("Elastic Net") + ylab("Random Forest") +
+  theme_classic(50)# + ggtitle("Cross Validation Perfromance") (save at width=850, height=600)
 
-en_svr <- inner_join(en_afa, svr_afa, by = c("gene"="gene"))
+en_svr <- inner_join(en_cau, svr_afa, by = c("gene"="gene"))
 cor.test(en_svr$en, en_svr$svr)
 library(ggplot2) #i used geom smooth to add the red regression line
-ggplot(en_svr, aes(x=en, y=svr)) + geom_point() + geom_abline(intercept=0, slope=1, color="blue") +
-  geom_smooth(method="lm", color="red") + xlim(-1,1) + ylim(-1,1) + xlab("Elastic Net") + ylab("Support Vector") +
-  theme_classic(20)# + ggtitle("Cross Validation Perfromance") (save at width=850, height=600)
+p2 <- ggplot(en_svr, aes(x=en, y=svr)) + geom_point() + geom_abline(intercept=0, slope=1, color="blue") +
+  geom_smooth(method="lm", color="red") + xlim(-0.1,1) + ylim(-1,1) + xlab("Elastic Net") + ylab("Support Vector") +
+  theme_classic(50)# + ggtitle("Cross Validation Perfromance") (save at width=850, height=600)
 
-en_knn <- inner_join(en_afa, knn_afa, by = c("gene"="gene"))
+en_knn <- inner_join(en_cau, knn_afa, by = c("gene"="gene"))
 cor.test(en_knn$en, en_knn$knn)
 library(ggplot2) #i used geom smooth to add the red regression line
-ggplot(en_knn, aes(x=en, y=knn)) + geom_point() + geom_abline(intercept=0, slope=1, color="blue") +
-  geom_smooth(method="lm", color="red") + xlim(-1,1) + ylim(-1,1) + xlab("Elastic Net") + ylab("K-Nearest Neighbor") +
-  theme_classic(20)# + ggtitle("Cross Validation Perfromance") (save at width=850, height=600)
+p3 <- ggplot(en_knn, aes(x=en, y=knn)) + geom_point() + geom_abline(intercept=0, slope=1, color="blue") +
+  geom_smooth(method="lm", color="red") + xlim(-0.1,1) + ylim(-1,1) + xlab("Elastic Net") + ylab("K-Nearest Neighbor") +
+  theme_classic(50)# + ggtitle("Cross Validation Perfromance") (save at width=850, height=600)
+
+
+####################
+#plot violin plot of the cv r2 of en, rf, svr, knn
+en <- data.frame(alg=rep("EN", nrow(en_cau)), r2=en_cau$en)
+rf <- data.frame(alg=rep("RF", nrow(rf_afa)), r2=rf_afa$rf)
+svr <- data.frame(alg=rep("SVR", nrow(svr_afa)), r2=svr_afa$svr)
+knn <- data.frame(alg=rep("KNN", nrow(knn_afa)), r2=knn_afa$knn)
+
+r2_comp <- rbind(en,rf,svr,knn)
+p4 <- ggplot(r2_comp, aes(x=alg, y=r2, color=alg, fill=alg)) + 
+  geom_violin(trim=F) + theme_classic(50) + xlab("") + theme(legend.position = "none") +
+  geom_boxplot(width=0.15,color="black") + ylab("CV Performance") + xlab("Model")
+
+#plot all 4 plots in one page
+library(gridExtra)
+grid.arrange(p1,p2,p3,p4,nrow=2) #save width=3500, height=2500
+
+
 
 
 #HIS
@@ -310,7 +356,7 @@ en_all <- drop_na(en_all) #remove NA
 en_all$cv_R2_avg <- as.numeric(en_all$cv_R2_avg)
 mean(en_all$cv_R2_avg)
 median(en_all$cv_R2_avg)
-en_all <- subset(en_all, cv_R2_avg > 0.1)
+en_all <- subset(en_all, cv_R2_avg > 0.5)
 en_all$gene_id <- as.character(en_all$gene_id)
 
 
@@ -348,9 +394,9 @@ cor.test(en_rf$en, en_rf$rf)
 t.test(en_rf$en, en_rf$rf)
 
 library(ggplot2) #i used geom smooth to add the red regression line
-ggplot(en_rf, aes(x=en, y=rf)) + geom_point() + geom_abline(intercept=0, slope=1, color="blue") +
-  geom_smooth(method="lm", color="red") + xlab("Elastic Net") + ylab("Random Forest") + xlim(-0.1,1) + ylim(-0.88,1) +
-  theme_classic(20)# + ggtitle("Cross Validation Perfromance") (save at width=900, height=600) + xlim(-1,1) + ylim(-1,1)
+p1 <- ggplot(en_rf, aes(x=en, y=rf)) + geom_point() + geom_abline(intercept=0, slope=1, color="blue") +
+  geom_smooth(method="lm", color="red") + xlab("Elastic Net") + ylab("Random Forest") + theme_classic(30) +
+  xlim(-0.1,1) + ylim(-1,1) # + ggtitle("Cross Validation Perfromance") (save at width=900, height=600) + xlim(-1,1) + ylim(-1,1)
 
 en_svr <- inner_join(en_all, svr_all, by = c("gene_id"="Gene_ID"))
 en_svr <- en_svr[,c(3,5)]
@@ -358,9 +404,9 @@ names(en_svr) <- c("en", "svr")
 cor.test(en_svr$en, en_svr$svr)
 t.test(en_svr$en, en_svr$svr)
 library(ggplot2) #i used geom smooth to add the red regression line
-ggplot(en_svr, aes(x=en, y=svr)) + geom_point() + geom_abline(intercept=0, slope=1, color="blue") +
-  geom_smooth(method="lm", color="red") + xlab("Elastic Net") + ylab("Support Vector") + xlim(-0.1,1) + ylim(-0.15,1) +
-  theme_classic(20)# + ggtitle("Cross Validation Perfromance") (save at width=900, height=600)+ xlim(-1,1) + ylim(-1,1)
+p2 <- ggplot(en_svr, aes(x=en, y=svr)) + geom_point() + geom_abline(intercept=0, slope=1, color="blue") +
+  geom_smooth(method="lm", color="red") + xlab("Elastic Net") + ylab("Support Vector") + theme_classic(30) + 
+  xlim(-0.1,1) + ylim(-1,1) # + ggtitle("Cross Validation Perfromance") (save at width=900, height=600)+ xlim(-1,1) + ylim(-1,1)
 
 en_knn <- inner_join(en_all, knn_all, by = c("gene_id"="Gene_ID"))
 en_knn <- en_knn[,c(3,5)]
@@ -368,9 +414,27 @@ names(en_knn) <- c("en","knn")
 cor.test(en_knn$en, en_knn$knn)
 t.test(en_knn$en, en_knn$knn)
 library(ggplot2) #i used geom smooth to add the red regression line
-ggplot(en_knn, aes(x=en, y=knn)) + geom_point() + geom_abline(intercept=0, slope=1, color="blue") +
-  geom_smooth(method="lm", color="red") + xlab("Elastic Net") + ylab("K-Nearest Neighbor") + xlim(-0.1,1) + ylim(-0.1,1) +
-  theme_classic(20)# + ggtitle("Cross Validation Perfromance") (save at width=850, height=600) + xlim(-1,1) + ylim(-1,1)
+p3 <- ggplot(en_knn, aes(x=en, y=knn)) + geom_point() + geom_abline(intercept=0, slope=1, color="blue") +
+  geom_smooth(method="lm", color="red") + xlab("Elastic Net") + ylab("K-Nearest Neighbor") + theme_classic(30) +
+  xlim(-0.1,1) + ylim(-1,1) # + ggtitle("Cross Validation Perfromance") (save at width=850, height=600) + xlim(-1,1) + ylim(-1,1)
+
+
+####################
+#plot violin plot of the cv r2 of en, rf, svr, knn
+en <- data.frame(alg=rep("EN", nrow(en_all)), r2=en_all$cv_R2_avg)
+rf <- data.frame(alg=rep("RF", nrow(rf_all)), r2=rf_all$CV_R2)
+svr <- data.frame(alg=rep("SVR", nrow(svr_all)), r2=svr_all$CV_R2)
+knn <- data.frame(alg=rep("KNN", nrow(knn_all)), r2=knn_all$CV_R2)
+
+r2_comp <- rbind(en,rf,svr,knn)
+p4 <- ggplot(r2_comp, aes(x=alg, y=r2, color=alg, fill=alg)) + 
+  geom_violin(trim=F) + theme_classic(30) + xlab("") + theme(legend.position = "none") +
+  geom_boxplot(width=0.15,color="black") + ylab("CV Performance")
+
+#plot all 4 plots in one page
+library(gridExtra)
+grid.arrange(p1,p2,p3,p4,nrow=2) #save width=3500, height=2500
+
 
 ####################################################
 #check if the genes in the models after filtering are the same
@@ -473,7 +537,7 @@ library(dplyr)
 #####AFHI
 en_afhi <- read.table(file="Z:/data/mesa_models/split_mesa/results/all_chr_AFHI_model_summaries.txt", header=T)#it has no header
 en_afhi$gene_id <- as.character(en_afhi$gene_id)
-en_afhi <- subset(en_afhi, en_afhi$cv_R2_avg >= 0.01)
+en_afhi <- subset(en_afhi, en_afhi$cv_R2_avg > 0.01)
 en_afhi <- en_afhi[,c(1,10)]
 for (i in 1:length(en_afhi$gene_id)){
   en_afhi$gene_id[i] <- gsub('\\.[0-9]+','',en_afhi$gene_id[i])
@@ -483,12 +547,12 @@ en_afhi_2_mets <- read.table(file = "Z:/data/mesa_models/mets_dosages/new_predix
 en_afhi_2_mets$gene <- as.character(en_afhi_2_mets$gene)
 filt_en_afhi_2_mets <- inner_join(en_afhi, en_afhi_2_mets, by = c("gene_id" = "gene")) #filter by CV R2 > 0.01
 mean(filt_en_afhi_2_mets$spearman)
-filt_en_afhi_2_mets <- subset(filt_en_afhi_2_mets, spearman >= 0.1)
+filt_en_afhi_2_mets <- subset(filt_en_afhi_2_mets, spearman > 0.1)
 
 #####ALL
 en_all <- read.table(file="Z:/data/mesa_models/split_mesa/results/all_chr_ALL_model_summaries.txt", header=T)#it has no header
 en_all$gene_id <- as.character(en_all$gene_id)
-en_all <- subset(en_all, en_all$cv_R2_avg >= 0.01)
+en_all <- subset(en_all, en_all$cv_R2_avg > 0.01)
 en_all <- en_all[,c(1,10)]
 for (i in 1:length(en_all$gene_id)){
   en_all$gene_id[i] <- gsub('\\.[0-9]+','',en_all$gene_id[i])
@@ -498,12 +562,12 @@ en_all_2_mets <- read.table(file = "Z:/data/mesa_models/mets_dosages/new_predixc
 en_all_2_mets$gene <- as.character(en_all_2_mets$gene)
 filt_en_all_2_mets <- inner_join(en_all, en_all_2_mets, by = c("gene_id" = "gene")) #filter by CV R2 > 0.01
 mean(filt_en_all_2_mets$spearman)
-filt_en_all_2_mets <- subset(filt_en_all_2_mets, spearman >= 0.1)
+filt_en_all_2_mets <- subset(filt_en_all_2_mets, spearman > 0.1)
 
 #CAU
 en_cau <- read.table(file = "Z:/data/mesa_models/MESA.CAU.WG.PC3.PF10.1000kb_WG_model_summaries.txt", header=T)
 en_cau$gene_id <- as.character(en_cau$gene_id)
-en_cau <- subset(en_cau, en_cau$cv_R2_avg >= 0.01)
+en_cau <- subset(en_cau, en_cau$cv_R2_avg > 0.01)
 en_cau <- en_cau[,c(1,10)]
 for (i in 1:length(en_cau$gene_id)){
   en_cau$gene_id[i] <- gsub('\\.[0-9]+','',en_cau$gene_id[i])
@@ -513,12 +577,12 @@ en_cau_2_mets <- read.table(file = "Z:/data/mesa_models/mets_dosages/new_predixc
 en_cau_2_mets$gene <- as.character(en_cau_2_mets$gene)
 filt_en_cau_2_mets <- inner_join(en_cau, en_cau_2_mets, by = c("gene_id" = "gene")) #filter by CV R2 > 0.01
 mean(filt_en_cau_2_mets$spearman)
-filt_en_cau_2_mets <- subset(filt_en_cau_2_mets, spearman >= 0.1)
+filt_en_cau_2_mets <- subset(filt_en_cau_2_mets, spearman > 0.1)
 
 #HIS
 en_his <- read.table(file = "Z:/data/mesa_models/MESA.HIS.WG.PC3.PF10.1000kb_WG_model_summaries.txt", header=T)
 en_his$gene_id <- as.character(en_his$gene_id)
-en_his <- subset(en_his, cv_R2_avg >= 0.01)
+en_his <- subset(en_his, cv_R2_avg > 0.01)
 en_his <- en_his[,c(1,10)]
 for (i in 1:length(en_his$gene_id)){
   en_his$gene_id[i] <- gsub('\\.[0-9]+','',en_his$gene_id[i])
@@ -528,7 +592,7 @@ en_his_2_mets <- read.table(file = "Z:/data/mesa_models/mets_dosages/new_predixc
 en_his_2_mets$gene <- as.character(en_his_2_mets$gene)
 filt_en_his_2_mets <- inner_join(en_his, en_his_2_mets, by = c("gene_id" = "gene")) #filter by CV R2 > 0.01
 mean(filt_en_his_2_mets$spearman)
-filt_en_his_2_mets <- subset(filt_en_his_2_mets, spearman >= 0.1)
+filt_en_his_2_mets <- subset(filt_en_his_2_mets, spearman > 0.1)
 
 #AFA
 en_afa <- read.table(file = "Z:/data/mesa_models/split_mesa/results/all_chr_AFA_model_summaries.txt", header = TRUE)
@@ -543,7 +607,7 @@ en_afa_2_mets <- read.table(file = "Z:/data/mesa_models/mets_dosages/new_predixc
 en_afa_2_mets$gene <- as.character(en_afa_2_mets$gene)
 filt_en_afa_2_mets <- inner_join(en_afa, en_afa_2_mets, by = c("gene_id" = "gene")) #filter by CV R2 > 0.01
 mean(filt_en_afa_2_mets$spearman)
-filt_en_afa_2_mets <- subset(filt_en_afa_2_mets, spearman >= 0.1)
+filt_en_afa_2_mets <- subset(filt_en_afa_2_mets, spearman > 0.1)
 
 #
 #Make violin plot for all 3 population mesa to mets with EN without doing R > 0.1
@@ -603,7 +667,7 @@ library(dplyr)
 #AFA
 rf_afa <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/best_grid_rf_all_chrom.txt", header = T)
 rf_afa$Gene_ID <- as.character(rf_afa$Gene_ID)
-rf_afa <- subset(rf_afa, rf_afa$CV_R2 >= 0.01)
+rf_afa <- subset(rf_afa, rf_afa$CV_R2 > 0.01)
 for (i in 1:length(rf_afa$Gene_ID)){
   rf_afa$Gene_ID[i] <- gsub('\\.[0-9]+','',rf_afa$Gene_ID[i])
 } #just to remove the decimal places in the gene_id
@@ -621,7 +685,7 @@ filt_rf_afa_2_mets <- subset(filt_rf_afa_2_mets, spearman >= 0.1)
 #HIS
 rf_his <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/HIS_best_grid_rf_all_chrom.txt", header = T)
 rf_his$Gene_ID <- as.character(rf_his$Gene_ID)
-rf_his <- subset(rf_his, rf_his$CV_R2 >= 0.01)
+rf_his <- subset(rf_his, rf_his$CV_R2 > 0.01)
 for (i in 1:length(rf_his$Gene_ID)){
   rf_his$Gene_ID[i] <- gsub('\\.[0-9]+','',rf_his$Gene_ID[i])
 } #just to remove the decimal places in the gene_id
@@ -638,7 +702,7 @@ filt_rf_his_2_mets <- subset(filt_rf_his_2_mets, spearman >= 0.1)
 #CAU
 rf_cau <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/CAU_best_grid_rf_all_chrom.txt", header = T)
 rf_cau$Gene_ID <- as.character(rf_cau$Gene_ID)
-rf_cau <- subset(rf_cau, rf_cau$CV_R2 >= 0.01)
+rf_cau <- subset(rf_cau, rf_cau$CV_R2 > 0.01)
 for (i in 1:length(rf_cau$Gene_ID)){
   rf_cau$Gene_ID[i] <- gsub('\\.[0-9]+','',rf_cau$Gene_ID[i])
 } #just to remove the decimal places in the gene_id
@@ -656,7 +720,7 @@ filt_rf_cau_2_mets <- subset(filt_rf_cau_2_mets, spearman >= 0.1)
 #AFHI
 rf_afhi <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/AFHI_best_grid_rf_all_chrom.txt", header = T)
 rf_afhi$Gene_ID <- as.character(rf_afhi$Gene_ID)
-rf_afhi <- subset(rf_afhi, rf_afhi$CV_R2 >= 0.01)
+rf_afhi <- subset(rf_afhi, rf_afhi$CV_R2 > 0.01)
 for (i in 1:length(rf_afhi$Gene_ID)){
   rf_afhi$Gene_ID[i] <- gsub('\\.[0-9]+','',rf_afhi$Gene_ID[i])
 } #just to remove the decimal places in the gene_id
@@ -669,6 +733,26 @@ filt_rf_afhi_2_mets <- filt_rf_afhi_2_mets[,c(1,13)]
 names(filt_rf_afhi_2_mets) <- c("gene", "spearman")
 mean(filt_rf_afhi_2_mets$spearman)
 filt_rf_afhi_2_mets <- subset(filt_rf_afhi_2_mets, spearman >= 0.1)
+
+
+
+#ALL
+rf_all <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/ALL_best_grid_rf_all_chrom.txt", header = T)
+rf_all$Gene_ID <- as.character(rf_all$Gene_ID)
+rf_all <- subset(rf_all, rf_all$CV_R2 > 0.01)
+for (i in 1:length(rf_all$Gene_ID)){
+  rf_all$Gene_ID[i] <- gsub('\\.[0-9]+','',rf_all$Gene_ID[i])
+} #just to remove the decimal places in the gene_id
+
+rf_all_2_mets <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_ALL_2_METS_rf_cor_test_full_chr.txt", header = T)
+rf_all_2_mets$gene_id <- as.character(rf_all_2_mets$gene_id)
+
+filt_rf_all_2_mets <- inner_join(rf_all, rf_all_2_mets, by = c("Gene_ID" = "gene_id")) #filter by CV R2 > 0.01
+filt_rf_all_2_mets <- filt_rf_all_2_mets[,c(1,13)]
+names(filt_rf_all_2_mets) <- c("gene", "spearman")
+mean(filt_rf_all_2_mets$spearman)
+filt_rf_all_2_mets <- subset(filt_rf_all_2_mets, spearman >= 0.1)
+
 
 
 #
@@ -746,6 +830,39 @@ names(filt_svr_cau_2_mets) <- c("gene", "spearman")
 mean(filt_svr_cau_2_mets$spearman)
 
 
+#AFHI
+svr_afhi <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/AFHI_best_grid_svr_all_chrom.txt", header = T)
+svr_afhi$Gene_ID <- as.character(svr_afhi$Gene_ID)
+svr_afhi <- subset(svr_afhi, svr_afhi$CV_R2 > 0.01)
+for (i in 1:length(svr_afhi$Gene_ID)){
+  svr_afhi$Gene_ID[i] <- gsub('\\.[0-9]+','',svr_afhi$Gene_ID[i])
+} #just to remove the decimal places in the gene_id
+
+svr_afhi_2_mets <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_AFHI_2_METS_svr_cor_test_full_chr.txt", header = T)
+svr_afhi_2_mets$gene_id <- as.character(svr_afhi_2_mets$gene_id)
+
+filt_svr_afhi_2_mets <- inner_join(svr_afhi, svr_afhi_2_mets, by = c("Gene_ID" = "gene_id")) #filter by CV R2 > 0.01
+filt_svr_afhi_2_mets <- filt_svr_afhi_2_mets[,c(1,13)]
+names(filt_svr_afhi_2_mets) <- c("gene", "spearman")
+mean(filt_svr_afhi_2_mets$spearman)
+
+
+#ALL
+svr_all <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/ALL_best_grid_svr_all_chrom.txt", header = T)
+svr_all$Gene_ID <- as.character(svr_all$Gene_ID)
+svr_all <- subset(svr_all, svr_all$CV_R2 > 0.01)
+for (i in 1:length(svr_all$Gene_ID)){
+  svr_all$Gene_ID[i] <- gsub('\\.[0-9]+','',svr_all$Gene_ID[i])
+} #just to remove the decimal places in the gene_id
+
+svr_all_2_mets <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_ALL_2_METS_svr_cor_test_full_chr.txt", header = T)
+svr_all_2_mets$gene_id <- as.character(svr_all_2_mets$gene_id)
+
+filt_svr_all_2_mets <- inner_join(svr_all, svr_all_2_mets, by = c("Gene_ID" = "gene_id")) #filter by CV R2 > 0.01
+filt_svr_all_2_mets <- filt_svr_all_2_mets[,c(1,13)]
+names(filt_svr_all_2_mets) <- c("gene", "spearman")
+mean(filt_svr_all_2_mets$spearman)
+
 #
 #Make violin plot for all 3 population mesa to mets with RF without doing R > 0.1
 svr_afa_2mets <- data.frame(spearman=filt_svr_afa_2_mets$spearman, 
@@ -820,6 +937,40 @@ names(filt_knn_cau_2_mets) <- c("gene", "spearman")
 mean(filt_knn_cau_2_mets$spearman)
 
 
+#AFHI
+knn_afhi <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/AFHI_best_grid_knn_all_chrom.txt", header = T)
+knn_afhi$Gene_ID <- as.character(knn_afhi$Gene_ID)
+knn_afhi <- subset(knn_afhi, knn_afhi$CV_R2 > 0.01)
+for (i in 1:length(knn_afhi$Gene_ID)){
+  knn_afhi$Gene_ID[i] <- gsub('\\.[0-9]+','',knn_afhi$Gene_ID[i])
+} #just to remove the decimal places in the gene_id
+
+knn_afhi_2_mets <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_AFHI_2_METS_knn_cor_test_full_chr.txt", header = T)
+knn_afhi_2_mets$gene_id <- as.character(knn_afhi_2_mets$gene_id)
+
+filt_knn_afhi_2_mets <- inner_join(knn_afhi, knn_afhi_2_mets, by = c("Gene_ID" = "gene_id")) #filter by CV R2 > 0.01
+filt_knn_afhi_2_mets <- filt_knn_afhi_2_mets[,c(1,13)]
+names(filt_knn_afhi_2_mets) <- c("gene", "spearman")
+mean(filt_knn_afhi_2_mets$spearman)
+
+
+#ALL
+knn_all <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/ALL_best_grid_knn_all_chrom.txt", header = T)
+knn_all$Gene_ID <- as.character(knn_all$Gene_ID)
+knn_all <- subset(knn_all, knn_all$CV_R2 > 0.01)
+for (i in 1:length(knn_all$Gene_ID)){
+  knn_all$Gene_ID[i] <- gsub('\\.[0-9]+','',knn_all$Gene_ID[i])
+} #just to remove the decimal places in the gene_id
+
+knn_all_2_mets <- read.table(file = "Z:/data/mesa_models/python_ml_models/results/grid_optimized_ALL_2_METS_knn_cor_test_full_chr.txt", header = T)
+knn_all_2_mets$gene_id <- as.character(knn_all_2_mets$gene_id)
+
+filt_knn_all_2_mets <- inner_join(knn_all, knn_all_2_mets, by = c("Gene_ID" = "gene_id")) #filter by CV R2 > 0.01
+filt_knn_all_2_mets <- filt_knn_all_2_mets[,c(1,13)]
+names(filt_knn_all_2_mets) <- c("gene", "spearman")
+mean(filt_knn_all_2_mets$spearman)
+
+
 #
 #Make violin plot for all 3 population mesa to mets with KNN without doing R > 0.1
 knn_afa_2mets <- data.frame(spearman=filt_knn_afa_2_mets$spearman, 
@@ -842,6 +993,124 @@ ggplot(knn_mesa_2_mets, aes(x=prediction, y=spearman, color=prediction, fill=pre
 
 
 
+#############make violin plot of all data in table 2, and also do the model comparison for all the pops and AFA and AFHI
+en_afa <- data.frame(spearman=filt_en_afa_2_mets$spearman,Model=rep("EN",nrow(filt_en_afa_2_mets)), 
+                     mesa=rep("AFA", nrow(filt_en_afa_2_mets)))
+en_his <- data.frame(spearman=filt_en_his_2_mets$spearman,Model=rep("EN",nrow(filt_en_his_2_mets)), 
+                     mesa=rep("HIS", nrow(filt_en_his_2_mets)))
+en_cau <- data.frame(spearman=filt_en_cau_2_mets$spearman,Model=rep("EN",nrow(filt_en_cau_2_mets)), 
+                     mesa=rep("CAU", nrow(filt_en_cau_2_mets)))
+en_afhi <- data.frame(spearman=filt_en_afhi_2_mets$spearman,Model=rep("EN",nrow(filt_en_afhi_2_mets)), 
+                     mesa=rep("AFHI", nrow(filt_en_afhi_2_mets)))
+en_all <- data.frame(spearman=filt_en_all_2_mets$spearman,Model=rep("EN",nrow(filt_en_all_2_mets)), 
+                     mesa=rep("ALL", nrow(filt_en_all_2_mets)))
+
+
+rf_afa <- data.frame(spearman=filt_rf_afa_2_mets$spearman,Model=rep("RF",nrow(filt_rf_afa_2_mets)), 
+                     mesa=rep("AFA", nrow(filt_rf_afa_2_mets)))
+rf_his <- data.frame(spearman=filt_rf_his_2_mets$spearman,Model=rep("RF",nrow(filt_rf_his_2_mets)), 
+                     mesa=rep("HIS", nrow(filt_rf_his_2_mets)))
+rf_cau <- data.frame(spearman=filt_rf_cau_2_mets$spearman,Model=rep("RF",nrow(filt_rf_cau_2_mets)), 
+                     mesa=rep("CAU", nrow(filt_rf_cau_2_mets)))
+rf_afhi <- data.frame(spearman=filt_rf_afhi_2_mets$spearman,Model=rep("RF",nrow(filt_rf_afhi_2_mets)), 
+                      mesa=rep("AFHI", nrow(filt_rf_afhi_2_mets)))
+rf_all <- data.frame(spearman=filt_rf_all_2_mets$spearman,Model=rep("RF",nrow(filt_rf_all_2_mets)), 
+                     mesa=rep("ALL", nrow(filt_rf_all_2_mets)))
+
+svr_afa <- data.frame(spearman=filt_svr_afa_2_mets$spearman,Model=rep("SVR",nrow(filt_svr_afa_2_mets)), 
+                     mesa=rep("AFA", nrow(filt_svr_afa_2_mets)))
+svr_his <- data.frame(spearman=filt_svr_his_2_mets$spearman,Model=rep("SVR",nrow(filt_svr_his_2_mets)), 
+                     mesa=rep("HIS", nrow(filt_svr_his_2_mets)))
+svr_cau <- data.frame(spearman=filt_svr_cau_2_mets$spearman,Model=rep("SVR",nrow(filt_svr_cau_2_mets)), 
+                     mesa=rep("CAU", nrow(filt_svr_cau_2_mets)))
+svr_afhi <- data.frame(spearman=filt_svr_afhi_2_mets$spearman,Model=rep("SVR",nrow(filt_svr_afhi_2_mets)), 
+                      mesa=rep("AFHI", nrow(filt_svr_afhi_2_mets)))
+svr_all <- data.frame(spearman=filt_svr_all_2_mets$spearman,Model=rep("SVR",nrow(filt_svr_all_2_mets)), 
+                     mesa=rep("ALL", nrow(filt_svr_all_2_mets)))
+
+knn_afa <- data.frame(spearman=filt_knn_afa_2_mets$spearman,Model=rep("KNN",nrow(filt_knn_afa_2_mets)), 
+                     mesa=rep("AFA", nrow(filt_knn_afa_2_mets)))
+knn_his <- data.frame(spearman=filt_knn_his_2_mets$spearman,Model=rep("KNN",nrow(filt_knn_his_2_mets)), 
+                     mesa=rep("HIS", nrow(filt_knn_his_2_mets)))
+knn_cau <- data.frame(spearman=filt_knn_cau_2_mets$spearman,Model=rep("KNN",nrow(filt_knn_cau_2_mets)), 
+                     mesa=rep("CAU", nrow(filt_knn_cau_2_mets)))
+knn_afhi <- data.frame(spearman=filt_knn_afhi_2_mets$spearman,Model=rep("KNN",nrow(filt_knn_afhi_2_mets)), 
+                      mesa=rep("AFHI", nrow(filt_knn_afhi_2_mets)))
+knn_all <- data.frame(spearman=filt_knn_all_2_mets$spearman,Model=rep("KNN",nrow(filt_knn_all_2_mets)), 
+                     mesa=rep("ALL", nrow(filt_knn_all_2_mets)))
+
+mesa2mets <- rbind(en_afa, en_his, en_cau, en_afhi, en_all, rf_afa, rf_his, rf_cau, rf_afhi, rf_all,
+                   svr_afa, svr_his, svr_cau, svr_afhi, svr_all, knn_afa, knn_his, knn_cau, knn_afhi, knn_all)
+
+mesa2mets_0.1 <- subset(mesa2mets, spearman > 0.1)
+
+library(ggplot2)
+ggplot(mesa2mets_0.1, aes(x=mesa, y=spearman, color=Model, fill=Model)) + 
+  geom_violin(trim=F, alpha=0.6) + geom_boxplot(width=0.01, color="black") + theme_classic(20) #+
+  #scale_y_continuous(breaks=seq(-1.0, 1.0, 0.2), limits=c(-1.0, 1.0)) +
+  #theme(panel.grid.minor = element_blank()) + xlab("KNN")
+
+ggplot(mesa2mets, aes(x=mesa, y=spearman, color=Model, fill=Model)) + geom_boxplot() + theme_classic(20) +
+  xlab("Population") + scale_y_continuous(breaks=seq(-1.0, 1.0, 0.5), limits=c(-1.0, 1.0)) +
+  ylab("Spearman Correlation")#stat_summary(fun.y=mean, geom = "point", size=1, color="white")
+
+ggplot(mesa2mets_0.1, aes(x=mesa, y=spearman, color=Model, fill=Model)) + geom_boxplot() + theme_classic(20) +
+  xlab("Population") + scale_y_continuous(breaks=seq(0, 1.0, 0.25), limits=c(0, 1.0)) +
+  ylab("Spearman Correlation")#stat_summary(fun.y=mean, geom = "point", size=1, color="white")
+
+#width=1000, height=750
+
+#compare ml and en across pops
+
+all_en_rf <- inner_join(filt_en_all_2_mets, filt_rf_all_2_mets, by =c("gene_id"="gene"))
+all_en_rf <- subset(all_en_rf, spearman.x > 0.1 & spearman.y > 0.1)
+all_en_rf <- all_en_rf[,c(3,4)]
+names(all_en_rf) <- c("x","y")
+
+p1 <- ggplot(all_en_rf, aes(x=x, y=y)) + geom_point() + geom_abline(intercept=0, slope=1, color="blue") +
+  geom_smooth(method="lm", color="red") + xlim(0,1) + ylim(0,1) + xlab("Elastic Net") + ylab("Random Forest") +
+  theme_classic(20)# + ggtitle("Cross Validation Perfromance") (save at width=820, height=600)
+
+all_en_svr <- inner_join(filt_en_all_2_mets, filt_svr_all_2_mets, by =c("gene_id"="gene"))
+all_en_svr <- subset(all_en_svr, spearman.x > 0.1 & spearman.y > 0.1)
+all_en_svr <- all_en_svr[,c(3,4)]
+names(all_en_svr) <- c("x","y")
+
+p2 <- ggplot(all_en_svr, aes(x=x, y=y)) + geom_point() + geom_abline(intercept=0, slope=1, color="blue") +
+  geom_smooth(method="lm", color="red") + xlim(0,1) + ylim(0,1) + xlab("Elastic Net") + ylab("Support Vector") +
+  theme_classic(20)# + ggtitle("Cross Validation Perfromance") (save at width=820, height=600)
+
+all_en_knn <- inner_join(filt_en_all_2_mets, filt_knn_all_2_mets, by =c("gene_id"="gene"))
+all_en_knn <- subset(all_en_knn, spearman.x > 0.1 & spearman.y > 0.1)
+all_en_knn <- all_en_knn[,c(3,4)]
+names(all_en_knn) <- c("x","y")
+
+p3 <- ggplot(all_en_knn, aes(x=x, y=y)) + geom_point() + geom_abline(intercept=0, slope=1, color="blue") +
+  geom_smooth(method="lm", color="red") + xlim(0,1) + ylim(0,1) + xlab("Elastic Net") + ylab("K Nearest Neighbor") +
+  theme_classic(20)# + ggtitle("Cross Validation Perfromance") (save at width=820, height=600)
+
+en <- data.frame(spearman=filt_en_all_2_mets$spearman, Model=rep("EN",nrow(filt_en_all_2_mets)))
+rf <- data.frame(spearman=filt_rf_all_2_mets$spearman, Model=rep("RF",nrow(filt_rf_all_2_mets)))
+svr <- data.frame(spearman=filt_svr_all_2_mets$spearman, Model=rep("SVR",nrow(filt_svr_all_2_mets)))
+knn <- data.frame(spearman=filt_knn_all_2_mets$spearman, Model=rep("KNN",nrow(filt_knn_all_2_mets)))
+
+model <- rbind(en, rf, svr, knn)
+model_0.1 <- subset(model, spearman > 0.1)
+
+ggplot(model, aes(x = spearman, color=Model)) + 
+  scale_x_continuous(name = "Spearman Correlation") +
+  geom_density(size=1.5)+ theme_classic(20) + scale_x_continuous(breaks=seq(-1, 1.0, 0.25), limits=c(-1, 1.0)) # +
+  #geom_vline(data=mu, aes(xintercept=grp.median, color=prediction),linetype="longdash", lwd=1) #+
+  #scale_color_manual(values = c("red","blue","orange","violet"))
+
+p4 <- ggplot(model_0.1, aes(x = spearman, color=Model)) + 
+  scale_x_continuous(name = "Spearman Correlation") +
+  geom_density(size=1.5)+ theme_classic(20) # +
+
+
+#plot all 4 plots in one page
+library(gridExtra)
+grid.arrange(p1,p2,p3,p4,nrow=2) #save width=3200, height=2200
 
 #head to head comparison of EN vs ML on performance in METS using AFA
 library(dplyr)
