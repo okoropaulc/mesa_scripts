@@ -27,14 +27,14 @@ if (!is.null(args$pop)){
 hapmappopinfo <- read.table(file="Z:/data/hapmap_hg19/pop_HM3_hg19_forPCA.txt") %>% select(V1,V3)
 colnames(hapmappopinfo) <- c("pop","IID")
 hapmappopinfo$IID <- as.character(hapmappopinfo$IID)
-fam <- read.table(file="Z:/QC/hapmap/07final_LDpruned.fam") %>% select(V1,V2)#final_LD_pruned_mesa_merged_w_hapmap.fam") %>% select (V1,V2)
+fam <- read.table(file="Z:/data/ml_paper/final_LDpruned.fam") %>% select(V1,V2)#final_LD_pruned_mesa_merged_w_hapmap.fam") %>% select (V1,V2)
 colnames(fam) <- c("FID","IID")
 fam$IID <- as.character(fam$IID)
 popinfo <- left_join(fam,hapmappopinfo,by="IID")
 
 popinfo <- mutate(popinfo, pop=ifelse(is.na(pop),'MESA', as.character(pop)))
 table(popinfo$pop)
-pcs <- read.table(file="Z:/QC/PCA/merged_pca.eigenvec",header=T)
+pcs <- read.table(file="Z:/data/ml_paper/merged_pca.eigenvec",header=T)
 #because of the occasional differences in the number of samples pcs and popinfo, subset popinfo with the pc samples
 #popinfo <- subset(popinfo, popinfo$IID %in% pcs$IID)
 #pcs <- subset(pcs, pcs$IID %in% popinfo$IID)
@@ -42,7 +42,7 @@ pcs <- read.table(file="Z:/QC/PCA/merged_pca.eigenvec",header=T)
 pcdf <- data.frame(popinfo, pcs[,3:ncol(pcs)])
 gwas <- filter(pcdf,pop=='MESA')
 hm3 <- filter(pcdf, grepl('NA',IID))
-eval <- scan(file="Z:/QC/PCA/merged_pca.eigenval")[1:10]
+eval <- scan(file="Z:/data/ml_paper/merged_pca.eigenval")[1:10]
 skree<-round(eval/sum(eval),3)
 skree<-cbind.data.frame(skree,c(1,2,3,4,5,6,7,8,9,10))
 colnames(skree)<-c("percent_var", "PC")

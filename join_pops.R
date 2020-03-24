@@ -68,6 +68,7 @@ write.table(allpop_sam, file="/home/pokoro/data/lauren_mesa/allpops_dosages_join
 # 
 # 
 # #make spoofed.fam for plink2
+# #format should be like this below
 # #requires 0 sampleid 0 0 0 0
 # 
 spoofed <- data.frame(id1=rep(0,nrow(allpop_sam)), id2=rep(0,nrow(allpop_sam)), id3=rep(0,nrow(allpop_sam)),
@@ -76,8 +77,27 @@ spoofed <- data.frame(id1=rep(0,nrow(allpop_sam)), id2=rep(0,nrow(allpop_sam)), 
 write.table(spoofed, file="/home/pokoro/data/lauren_mesa/allpops_dosages_joined/spoofed.fam", row.names=F,col.names=F,quote=F,sep="\t")
 
 
+#MAKE SPOOFED and SAMPLES LIST FOR METS
+
+mets <- read.table(file = "Z:/data/METS_model/hg19/hg19.WG.maf0.01.info0.8.dosage_rsid.txt", nrows=4, header=T)
+
+samples <- names(mets)[7:length(mets)-1]
+
+spoofed <- data.frame(id1=rep(0,length(samples)), id2=samples, id3=rep(0,length(samples)),
+                      id4=rep(0,length(samples)), id5=rep(0,length(samples)),
+                      id6=rep(0,length(samples)))
+
+mets_samples <- data.frame(id=samples)
+
+write.table(spoofed, file = "Z:/data/METS_model/hg19/spoofed.txt", col.names=F, row.names=F,
+            sep="\t", quote=F)
+
+write.table(mets_samples, file = "Z:/data/METS_model/hg19/samples.txt", col.names=F, row.names=F,
+            sep="\t", quote=F)
 
 
+write.table(spoofed, file = "Z:/data/mets_plink/spoofed.fam", col.names=F, row.names=F,
+            sep="\t", quote=F)
 
 
 
