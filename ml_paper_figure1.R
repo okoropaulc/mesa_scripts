@@ -1,3 +1,4 @@
+library(dplyr)
 #AFA
 en_afa <- read.table(file = "Z:/data/mesa_models/split_mesa/results/all_chr_AFA_model_summaries.txt", header = TRUE)
 en_afa$gene_id <- as.character(en_afa$gene_id)

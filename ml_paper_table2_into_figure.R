@@ -1,5 +1,5 @@
 model <- c("EN", "EN", "EN", "RF", "RF", "RF", "SVR", "SVR", "SVR", "KNN", "KNN", "KNN")
-threshold <- c("all","P>0", "P>0.1")
+threshold <- c("all","p>0", "p>0.1")
 
 
 afa_count <- c(3268, 2351, 1545, 2673, 1858, 1167, 2492, 1663, 961, 2333, 1500, 824)
@@ -23,12 +23,12 @@ library(ggplot2)
 ggplot(data=table2, aes(x=population, y=Count, fill=Model, shape=Threshold)) +
   geom_bar(stat="identity", position=position_dodge())+
   scale_fill_brewer(palette="Paired")+
-  theme_minimal() + xlab("Population") + ylab("Genes")
+  theme_minimal(30) + xlab("Population") + ylab("Genes")
 
 ggplot(data=table2, aes(x=population, y=Count, fill=Model, color=Threshold)) +
   geom_bar(stat="identity", position=position_dodge())+
   scale_fill_brewer(palette="Paired")+
-  theme_minimal()  + xlab("Population") + ylab("Genes")
+  theme_minimal(30)  + xlab("Population") + ylab("Genes")
 
 ggplot(data=table2, aes(x=population, y=Count, fill=Model, color=Threshold)) +
   geom_bar(stat="identity", position=position_dodge2())+
@@ -40,21 +40,46 @@ library(viridis)
 ggplot(data=table2, aes(x=population, y=Count, color=Model, fill=Model)) +
   geom_bar(stat="identity", position=position_dodge()) +
   scale_fill_brewer(palette="Paired") +
-  theme_minimal(20)  + xlab("Population") + ylab("Genes") + scale_fill_viridis(discrete=T)
+  theme_minimal(30)  + xlab("Population") + ylab("Genes") + scale_fill_viridis(discrete=T)
 
 ggplot(data=table2, aes(x=population, y=Count, colour=Model, fill=Model)) +
   geom_bar(stat="identity", position=position_dodge()) +
   scale_fill_brewer(palette="Paired", aesthetics = "colour") +
-  theme_minimal(20)  + xlab("Population") + ylab("Genes") + scale_fill_viridis(discrete=T, option="A")
+  theme_minimal(30)  + xlab("Population") + ylab("Genes") + scale_fill_viridis(discrete=T, option="A")
 
 ggplot(data=table2, aes(x=population, y=Count, colour=Threshold, fill=Model)) +
   geom_bar(stat="identity", position=position_dodge()) +
   scale_fill_brewer(palette="Paired", aesthetics = "fill") +
-  theme_minimal(20)  + xlab("Population") + ylab("Genes") + scale_fill_viridis(discrete=T, option="A")
+  theme_minimal(30)  + xlab("Population") + ylab("Genes") + scale_fill_viridis(discrete=T, option="A")
 
 
 ggplot(data=table2, aes(x=population, y=Count, colour=Model, fill=Model)) +
   geom_bar(stat="identity", position=position_dodge()) +
   scale_fill_brewer(palette="Paired", aesthetics = "colour") +
-  theme_minimal(20)  + xlab("Population") + ylab("Genes") + scale_fill_viridis(discrete=T, option="A")+
+  theme_minimal(30)  + xlab("Population") + ylab("Genes") + scale_fill_viridis(discrete=T, option="A")+
   geom_text(aes(label=Count), vjust=2, color="white", size=4)
+
+
+#face wrap
+
+ggplot(data=table2, aes(x=population, y=Count, colour=Model, fill=Model)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  scale_fill_brewer(palette="Paired", aesthetics = "colour") +
+  theme_minimal(30)  + xlab("Population") + ylab("Genes") + scale_fill_viridis(discrete=T, option="A")+
+  facet_wrap(~Threshold)
+
+
+ggplot(data=table2, aes(x=population, y=Count, colour=Threshold, fill=Threshold)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  scale_fill_brewer(palette="Paired", aesthetics = "colour") +
+  theme_minimal(30)  + xlab("Population") + ylab("Genes") + scale_fill_viridis(discrete=T, option="D")+
+  facet_wrap(~Model)
+#width=1300 height=1100
+
+
+ggplot(data=table2, aes(x=population, y=Count, fill=Threshold)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  scale_fill_brewer(palette="Paired", aesthetics = "colour") +
+  theme_minimal(30)  + xlab("Population") + ylab("Genes") + scale_fill_viridis(discrete=T, option="A")+
+  facet_wrap(~Model) + scale_fill_discrete(name =expression(rho), labels = c("all", ">0", ">0.1"))
+#width=1300 height=1100
