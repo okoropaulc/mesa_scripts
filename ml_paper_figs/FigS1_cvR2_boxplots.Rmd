@@ -15,7 +15,7 @@ data <- read.table("boxplotsdf.txt",header=T,stringsAsFactors = F)
 data <- mutate(data,pop=factor(pop,levels=c("ALL","AFA","HIS","CAU")),model=factor(model,levels=c("EN","RF","SVR","KNN")))
 fig <- ggplot(data,aes(x=pop,y=cvR2,fill=model)) + geom_boxplot(outlier.size = 0.01,lwd=0.1) + 
   xlab("Population") + ylab(expression(paste("Cross-validated ", R^{2}))) +
-  theme_classic(12)
+  theme_classic(12) + labs(fill="Model")
 
 print(fig)
 
