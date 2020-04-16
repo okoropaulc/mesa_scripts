@@ -207,6 +207,8 @@ dev.off()
 
 
 #####Make the manhattan plot
+#this script for mamhattan plot was gotten from
+#https://github.com/pcgoddard/Burchardlab_Tutorials/wiki/GGplot2-Manhattan-Plot-Function
 library(readr)
 library(ggrepel)
 library(ggplot2)
