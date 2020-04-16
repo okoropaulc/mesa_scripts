@@ -4,26 +4,26 @@ en_afa <- read.table(file = "Z:/data/mesa_models/split_mesa/results/all_chr_AFA_
 en_afa$gene_id <- as.character(en_afa$gene_id)
 en_afa <- en_afa[,c(1,10)]
 names(en_afa) <- c("gene", "en")
-en_afa <- subset(en_afa, en > -1)
+en_afa <- subset(en_afa, en > -0.01)
 
 #best_grid_rf_all_chrom.txt
 rf_afa <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/AFA_best_grid_rf_all_chrom.txt", header = T)
 rf_afa$Gene_ID <- as.character(rf_afa$Gene_ID)
 rf_afa <- rf_afa[,c(1,3)]
 names(rf_afa) <- c("gene", "rf")
-rf_afa <- subset(rf_afa, rf > -1)
+rf_afa <- subset(rf_afa, rf > -0.01)
 
 svr_afa <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/AFA_best_grid_svr_all_chrom.txt", header = T)
 svr_afa$Gene_ID <- as.character(svr_afa$Gene_ID)
 svr_afa <- svr_afa[,c(1,3)]
 names(svr_afa) <- c("gene", "svr")
-svr_afa <- subset(svr_afa, svr > -1)
+svr_afa <- subset(svr_afa, svr > -0.01)
 
 knn_afa <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/AFA_best_grid_knn_all_chrom.txt", header = T)
 knn_afa$Gene_ID <- as.character(knn_afa$Gene_ID)
 knn_afa <- knn_afa[,c(1,3)]
 names(knn_afa) <- c("gene", "knn")
-knn_afa <- subset(knn_afa, knn > -1)
+knn_afa <- subset(knn_afa, knn > -0.01)
 
 # ML R2 comparisons against EN
 library(dplyr)
@@ -74,25 +74,25 @@ en_his <- read.table(file = "Z:/data/mesa_models/split_mesa/results/all_chr_HIS_
 en_his$gene_id <- as.character(en_his$gene_id)
 library(tidyverse)
 en_his <- drop_na(en_his)
-en_his <- subset(en_his, en_his$cv_R2_avg > -1)
+en_his <- subset(en_his, en_his$cv_R2_avg > -0.01)
 en_his <- en_his[,c(1,10)]
 names(en_his) <- c("gene","en")
 
 rf_his <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/HIS_best_grid_rf_all_chrom.txt", header = T)
 rf_his$Gene_ID <- as.character(rf_his$Gene_ID)
-rf_his <- subset(rf_his, rf_his$CV_R2 > -1)
+rf_his <- subset(rf_his, rf_his$CV_R2 > -0.01)
 rf_his <- rf_his[,c(1,3)]
 names(rf_his) <- c("gene", "rf")
 
 svr_his <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/HIS_best_grid_svr_all_chrom.txt", header = T)
 svr_his$Gene_ID <- as.character(svr_his$Gene_ID)
-svr_his <- subset(svr_his, svr_his$CV_R2 > -1)
+svr_his <- subset(svr_his, svr_his$CV_R2 > -0.01)
 svr_his <- svr_his[,c(1,3)]
 names(svr_his) <- c("gene","svr")
 
 knn_his <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/HIS_best_grid_knn_all_chrom.txt", header = T)
 knn_his$Gene_ID <- as.character(knn_his$Gene_ID)
-knn_his <- subset(knn_his, knn_his$CV_R2 > -1)
+knn_his <- subset(knn_his, knn_his$CV_R2 > -0.01)
 knn_his <- knn_his[,c(1,3)]
 names(knn_his) <- c("gene", "knn")
 
@@ -143,25 +143,25 @@ en_cau$gene_id <- as.character(en_cau$gene_id)
 library(tidyverse)
 en_cau <- drop_na(en_cau)
 #check for NA's in the avg_cv_R2 and drop it
-en_cau <- subset(en_cau, en_cau$cv_R2_avg > -1)
+en_cau <- subset(en_cau, en_cau$cv_R2_avg > -0.01)
 en_cau <- en_cau[,c(1,10)]
 names(en_cau) <- c("gene","en")
 
 rf_cau <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/CAU_best_grid_rf_all_chrom.txt", header = T)
 rf_cau$Gene_ID <- as.character(rf_cau$Gene_ID)
-rf_cau <- subset(rf_cau, rf_cau$CV_R2 > -1)
+rf_cau <- subset(rf_cau, rf_cau$CV_R2 > -0.01)
 rf_cau <- rf_cau[,c(1,3)]
 names(rf_cau) <- c("gene", "rf")
 
 svr_cau <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/CAU_best_grid_svr_all_chrom.txt", header = T)
 svr_cau$Gene_ID <- as.character(svr_cau$Gene_ID)
-svr_cau <- subset(svr_cau, svr_cau$CV_R2 > -1)
+svr_cau <- subset(svr_cau, svr_cau$CV_R2 > -0.01)
 svr_cau <- svr_cau[,c(1,3)]
 names(svr_cau) <- c("gene","svr")
 
 knn_cau <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/CAU_best_grid_knn_all_chrom.txt", header = T)
 knn_cau$Gene_ID <- as.character(knn_cau$Gene_ID)
-knn_cau <- subset(knn_cau, knn_cau$CV_R2 > -1)
+knn_cau <- subset(knn_cau, knn_cau$CV_R2 > -0.01)
 knn_cau <- knn_cau[,c(1,3)]
 names(knn_cau) <- c("gene", "knn")
 
@@ -285,13 +285,13 @@ rf_all$Gene_ID <- as.character(rf_all$Gene_ID)
 
 svr_all <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/ALL_best_grid_svr_all_chrom.txt", header=T)
 svr_all$CV_R2 <- as.numeric(svr_all$CV_R2)
-svr_all <- subset(svr_all, CV_R2 > -0.5)
+svr_all <- subset(svr_all, CV_R2 > -0.01)
 svr_all$Gene_ID <- as.character(svr_all$Gene_ID)
 
 
 knn_all <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/ALL_best_grid_knn_all_chrom.txt", header=T)
 knn_all$CV_R2 <- as.numeric(knn_all$CV_R2)
-knn_all <- subset(knn_all, CV_R2 > -0.5)
+knn_all <- subset(knn_all, CV_R2 > -0.01)
 knn_all$Gene_ID <- as.character(knn_all$Gene_ID)
 
 
@@ -304,8 +304,9 @@ names(en_rf) <- c("en", "rf")
 
 library(ggplot2) #i used geom smooth to add the red regression line
 p1 <- ggplot(en_rf, aes(x=en, y=rf)) + geom_point() + geom_abline(intercept=0, slope=1, color="blue") +
-  geom_smooth(method="lm", color="red") + xlab("Elastic Net") + ylab("Random Forest") + theme_classic(70) +
-  xlim(-0.1,1) + ylim(-1,1) +
+  geom_smooth(method="lm", color="red") + xlab("Elastic Net") + ylab("Random Forest") + 
+  theme_classic(20) +
+  xlim(-0.5,1) + ylim(-0.5,1) +
   labs(title="A")# + ggtitle("Cross Validation Perfromance") (save at width=900, height=600) + xlim(-1,1) + ylim(-1,1)
 
 en_svr <- inner_join(en_all, svr_all, by = c("gene_id"="Gene_ID"))

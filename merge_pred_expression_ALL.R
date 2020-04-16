@@ -113,9 +113,9 @@ fwrite(knn, file="/home/pokoro/data/twas_mesa/ml_pred/transformed_ALL_allchrom_r
 # names(en_all) <- header
 # 
 # en_all$gene_id <- as.character(en_all$gene_id)
-# for (i in 1:nrow(en_all)){
-#   en_all$gene_id[i] <- gsub('\\.[0-9]+','',en_all$gene_id[i])
-# } #just to remove the decimal places in the gene_id
+for (i in 1:nrow(en_all)){
+  en_all$gene_id[i] <- gsub('\\.[0-9]+','',en_all$gene_id[i])
+} #just to remove the decimal places in the gene_id
 # 
 # 
 # en_all$cv_R2_avg <- as.numeric(en_all$cv_R2_avg)
@@ -130,9 +130,9 @@ fwrite(knn, file="/home/pokoro/data/twas_mesa/ml_pred/transformed_ALL_allchrom_r
 # all_pred_en <- fread(file="/home/pokoro/data/twas_mesa/ALL_en_predicted_expression.txt", header=T)
 # 
 # #remove the decimal in the gene id
-# for (i in 3:7808){
-#   colnames(all_pred_en)[i] <- gsub('\\.[0-9]+','',colnames(all_pred_en)[i])
-# }
+for (i in 3:7808){
+  colnames(all_pred_en)[i] <- gsub('\\.[0-9]+','',colnames(all_pred_en)[i])
+}
 # 
 # #keep predicted genes that have cv_r2 >= 0.01
 # en <- all_pred_en %>% select(c("IID", en_all$gene_id))

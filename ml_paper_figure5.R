@@ -5,7 +5,7 @@ library(data.table)
 library(dplyr)
 library(ggplot2)
 #read in gencode just to find the gene Id
-#gencode <- fread(file="Z:/data/mesa_models/gencode.v18.annotation.parsed.txt", header=T)
+gencode <- fread(file="Z:/data/mesa_models/gencode.v18.annotation.parsed.txt", header=T)
 
 #CETP gene_id = ENSG00000087237.6
 
