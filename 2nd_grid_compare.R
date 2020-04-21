@@ -825,8 +825,7 @@ for (i in 2:length(rftrees$`50`)){
 
 library(ggplot2)
 
-p = ggplot(rftrees) + 
-  geom_line(aes(x = trees, y = rftrees[1,]), color = "blue")# +
+p <- ggplot(rftrees) + geom_line(aes(x = trees, y = rftrees[1,]), color = "blue")# +
   #geom_line(data = prescription2, aes(x = dates, y = Difference), color = "red") +
   #xlab('Dates') +
   #ylab('percent.change')
@@ -932,7 +931,7 @@ ggplot(rf_tree, aes(x=tree, y=CV_R2, color=tree, fill=tree)) +
 #Plot 5, 50 500 trees
 
 #Plot the different trees of the Random Forest
-brf <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/best_grid_rf_all_chrom.txt", header=T)
+brf <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/AFA_best_grid_rf_all_chrom.txt", header=T)
 prf <- read.table(file = "Z:/data/mesa_models/python_ml_models/merged_chunk_results/AFA_rf_100_to_500tree_cv_full_chr.txt", header=T)
 
 #Start by taking genes with best CV R2 > 0.3

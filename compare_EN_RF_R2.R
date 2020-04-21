@@ -1,6 +1,9 @@
 library(dplyr)
 library(ggplot2)
 
+##This script is to find the number of genes in RF that are not in EN vice versa after filtering out genes with cv R2 < 0.01
+##This annlysis is focused on Model training with the ALL cohort (Combination of MESA AFA, HIS, CAU)
+
 ###########               ALL
 
 en_all <- read.table(file="Z:/data/mesa_models/split_mesa/results/all_chr_ALL_model_summaries.txt", header=T)#it has no header
